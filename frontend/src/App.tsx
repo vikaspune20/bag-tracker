@@ -3,8 +3,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import { Layout } from './components/Layout';
 import { Landing } from './pages/Landing';
-import { LandingHome } from './pages/LandingHome';
-import { LandingHome2 } from './pages/LandingHome2';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { Dashboard } from './pages/Dashboard';
@@ -32,8 +30,6 @@ const App = () => {
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Landing />} />
-        <Route path="/home" element={<LandingHome />} />
-        <Route path="/home-2" element={<LandingHome2 />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/subscription-result" element={<SubscriptionResult />} />
