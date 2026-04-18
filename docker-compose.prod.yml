@@ -1,6 +1,7 @@
-# Production (Option B: app on Amplify → https://app.jcsmartbag.com , API on EC2)
+# Production (Option B: frontend on Amplify, API on EC2)
+# Public site: both https://jcsmartbag.com and https://www.jcsmartbag.com (Amplify + GoDaddy DNS)
+# Pick ONE canonical URL in Amplify (redirect the other). APP_URL must match that primary hostname.
 # EC2 Elastic IP: 13.63.123.201 — GoDaddy: A record api.jcsmartbag.com → this IP
-# Docker backend: bind localhost only; Nginx terminates HTTPS for api.jcsmartbag.com
 
 services:
   db:
@@ -20,8 +21,8 @@ services:
       PORT: "5000"
       DATABASE_URL: "postgresql://postgres:Henok_USA@2025@db:5432/bagtracker?schema=public"
       JWT_SECRET: "CHANGE_ME_JWT_SECRET"
-      # Public URL of the frontend (Amplify)
-      APP_URL: "https://app.jcsmartbag.com"
+      # Canonical site URL (match Amplify “primary domain” after redirects)
+      APP_URL: "https://jcsmartbag.com"
 
       SMTP_HOST: "smtp.gmail.com"
       SMTP_PORT: "587"
