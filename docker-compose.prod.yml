@@ -17,7 +17,7 @@ services:
       DATABASE_URL: "postgresql://postgres:Henok_USA@2025@db:5432/bagtracker?schema=public"
       JWT_SECRET: "CHANGE_ME_JWT_SECRET"
       # All-in-one on EC2: same URL users open in the browser (http://YOUR_PUBLIC_IP or Elastic IP)
-      APP_URL: "http://16.170.228.223:5000"
+      APP_URL: "http://13.51.158.144:5000"
 
       SMTP_HOST: "smtp.gmail.com"
       SMTP_PORT: "587"
