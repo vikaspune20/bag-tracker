@@ -8,7 +8,7 @@ datasource db {
 }
 
 model User {
-  id               String    @id
+  id               String    @id @default(uuid())
   fullName         String
   email            String    @unique
   phone            String
@@ -37,7 +37,7 @@ model User {
 }
 
 model Trip {
-  id                 String    @id
+  id                 String    @id @default(uuid())
   userId             String
   flightNumber       String
   airlineName        String
@@ -55,7 +55,7 @@ model Trip {
 }
 
 model Bag {
-  id          String   @id
+  id          String   @id @default(uuid())
   tripId      String
   tagNumber   String          // ← removed @unique here
   description String
@@ -73,7 +73,7 @@ model Bag {
 }
 
 model TrackingLog {
-  id              String   @id
+  id              String   @id @default(uuid())
   bagId           String
   status          String
   airportLocation String?
@@ -86,7 +86,7 @@ model TrackingLog {
 }
 
 model Notification {
-  id        String   @id
+  id        String   @id @default(uuid())
   userId    String
   bagId     String?
   message   String
@@ -101,7 +101,7 @@ model Notification {
 }
 
 model Subscription {
-  id                    String    @id
+  id                    String    @id @default(uuid())
   userId                String
   planMonths            Int
   amount                Int
