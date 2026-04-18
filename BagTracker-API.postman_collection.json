@@ -1,0 +1,329 @@
+{
+  "info": {
+    "name": "BagTracker API",
+    "description": "Complete REST API for BagTracker — works with web and mobile clients.\n\nBase URL: {{baseUrl}} (default http://localhost:5000/api)\n\nAuth: Most endpoints require a Bearer JWT token. Use Login to get one, then it's auto-set via the collection variable {{token}}.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000/api" },
+    { "key": "token", "value": "" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] },
+            "auth": { "type": "noauth" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] },
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"phone\": \"+1234567890\",\n  \"address\": \"123 Main St\",\n  \"state\": \"CA\",\n  \"city\": \"Los Angeles\",\n  \"country\": \"United States\",\n  \"identificationNo\": \"ID123456\",\n  \"password\": \"SecurePass123!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.token) { pm.collectionVariables.set('token', json.token); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] },
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john@example.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/auth/forgot-password", "host": ["{{baseUrl}}"], "path": ["auth", "forgot-password"] },
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john@example.com\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/auth/reset-password", "host": ["{{baseUrl}}"], "path": ["auth", "reset-password"] },
+            "auth": { "type": "noauth" },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"paste-reset-token-here\",\n  \"password\": \"NewSecurePass456!\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/auth/profile", "host": ["{{baseUrl}}"], "path": ["auth", "profile"] }
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "url": { "raw": "{{baseUrl}}/auth/profile", "host": ["{{baseUrl}}"], "path": ["auth", "profile"] },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "fullName", "value": "John Updated", "type": "text" },
+                { "key": "phone", "value": "+1987654321", "type": "text" },
+                { "key": "address", "value": "456 Oak Ave", "type": "text" },
+                { "key": "state", "value": "NY", "type": "text" },
+                { "key": "city", "value": "New York", "type": "text" },
+                { "key": "identificationNo", "value": "ID789012", "type": "text" },
+                { "key": "profilePic", "type": "file", "src": "", "description": "Optional profile picture" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Trips",
+      "item": [
+        {
+          "name": "Create Trip (with Bags)",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/trips", "host": ["{{baseUrl}}"], "path": ["trips"] },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "flightNumber", "value": "AA1234", "type": "text" },
+                { "key": "airlineName", "value": "American Airlines", "type": "text" },
+                { "key": "departureAirport", "value": "LAX", "type": "text" },
+                { "key": "destinationAirport", "value": "JFK", "type": "text" },
+                { "key": "departureDate", "value": "2026-05-01", "type": "text" },
+                { "key": "departureTime", "value": "08:00", "type": "text" },
+                { "key": "arrivalDate", "value": "2026-05-01", "type": "text" },
+                { "key": "arrivalTime", "value": "16:30", "type": "text" },
+                { "key": "bags", "value": "[{\"tagNumber\":\"TAG001\",\"weight\":23.5,\"description\":\"Black suitcase\"},{\"tagNumber\":\"TAG002\",\"weight\":18.0,\"description\":\"Blue duffel bag\"}]", "type": "text" },
+                { "key": "image_0", "type": "file", "src": "", "description": "Photo for bag at index 0" },
+                { "key": "image_1", "type": "file", "src": "", "description": "Photo for bag at index 1" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List My Trips",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/trips", "host": ["{{baseUrl}}"], "path": ["trips"] }
+          }
+        },
+        {
+          "name": "Get Trip by ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/trips/:id", "host": ["{{baseUrl}}"], "path": ["trips", ":id"] },
+            "description": "Replace :id with a trip UUID"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bags",
+      "item": [
+        {
+          "name": "Add Bag to Trip",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/bags", "host": ["{{baseUrl}}"], "path": ["bags"] },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "tripId", "value": "paste-trip-uuid", "type": "text" },
+                { "key": "tagNumber", "value": "TAG003", "type": "text" },
+                { "key": "weight", "value": "20.0", "type": "text" },
+                { "key": "description", "value": "Red carry-on", "type": "text" },
+                { "key": "image", "type": "file", "src": "", "description": "Optional bag photo" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List My Bags",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/bags", "host": ["{{baseUrl}}"], "path": ["bags"] }
+          }
+        },
+        {
+          "name": "Get Bag by ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/bags/:id", "host": ["{{baseUrl}}"], "path": ["bags", ":id"] },
+            "description": "Replace :id with a bag UUID"
+          }
+        },
+        {
+          "name": "Delete Bag",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/bags/:id", "host": ["{{baseUrl}}"], "path": ["bags", ":id"] },
+            "description": "Replace :id with a bag UUID"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tracking",
+      "item": [
+        {
+          "name": "Add Tracking Log (Admin)",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/tracking", "host": ["{{baseUrl}}"], "path": ["tracking"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bagId\": \"paste-bag-uuid\",\n  \"status\": \"Checked In\",\n  \"airportLocation\": \"LAX Terminal 4\",\n  \"remarks\": \"Bag scanned at check-in counter\"\n}"
+            },
+            "description": "Requires ADMIN role. Statuses: Checked In, In Transit, Transfer, Arrived, Delayed, Lost"
+          }
+        },
+        {
+          "name": "Get Tracking by Bag ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/tracking/:bagId", "host": ["{{baseUrl}}"], "path": ["tracking", ":bagId"] },
+            "description": "Replace :bagId with a bag UUID"
+          }
+        },
+        {
+          "name": "Get Tracking by Tag Number",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/tracking/by-tag/:tag", "host": ["{{baseUrl}}"], "path": ["tracking", "by-tag", ":tag"] },
+            "description": "Replace :tag with the bag tag number (e.g. TAG001)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notifications",
+      "item": [
+        {
+          "name": "List Notifications",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/notifications", "host": ["{{baseUrl}}"], "path": ["notifications"] }
+          }
+        },
+        {
+          "name": "Mark All as Read",
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{baseUrl}}/notifications/mark-all-read", "host": ["{{baseUrl}}"], "path": ["notifications", "mark-all-read"] }
+          }
+        },
+        {
+          "name": "Mark One as Read",
+          "request": {
+            "method": "PATCH",
+            "url": { "raw": "{{baseUrl}}/notifications/:id/read", "host": ["{{baseUrl}}"], "path": ["notifications", ":id", "read"] },
+            "description": "Replace :id with a notification UUID"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Subscriptions",
+      "item": [
+        {
+          "name": "Get Subscription Status",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/subscriptions/status", "host": ["{{baseUrl}}"], "path": ["subscriptions", "status"] }
+          }
+        },
+        {
+          "name": "Create Checkout Session",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/subscriptions/checkout-session", "host": ["{{baseUrl}}"], "path": ["subscriptions", "checkout-session"] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"priceId\": \"price_xxx\"\n}"
+            },
+            "description": "Pass a Stripe Price ID. Returns { url } to redirect user to Stripe Checkout."
+          }
+        },
+        {
+          "name": "Cancel Subscription",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/subscriptions/cancel", "host": ["{{baseUrl}}"], "path": ["subscriptions", "cancel"] },
+            "description": "Requires active premium subscription"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Stripe Webhook",
+      "item": [
+        {
+          "name": "Stripe Webhook (Server-to-Server)",
+          "request": {
+            "method": "POST",
+            "url": { "raw": "{{baseUrl}}/stripe/webhook", "host": ["{{baseUrl}}"], "path": ["stripe", "webhook"] },
+            "auth": { "type": "noauth" },
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "stripe-signature", "value": "paste-stripe-sig-here" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "description": "Called by Stripe servers. Requires raw body + stripe-signature header. Not typically called manually."
+          }
+        }
+      ]
+    }
+  ]
+}
