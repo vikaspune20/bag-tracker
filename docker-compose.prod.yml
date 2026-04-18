@@ -34,7 +34,7 @@ services:
       - db
     # Only localhost — Nginx on the host proxies /api and /uploads to this port
     ports:
-      - "127.0.0.1:5000:5000"
+      - "5000:5000"
     restart: unless-stopped
 
 volumes:
