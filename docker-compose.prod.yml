@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Henok_USA@2025
+      POSTGRES_DB: bagtracker
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      PORT: "5000"
+      DATABASE_URL: "postgresql://postgres:Henok_USA@2025@db:5432/bagtracker?schema=public"
+      JWT_SECRET: "CHANGE_ME_JWT_SECRET"
+      APP_URL: "https://main.d29thuqnvkrhh9.amplifyapp.com"
+
+      SMTP_HOST: "smtp.gmail.com"
+      SMTP_PORT: "587"
+      SMTP_USER: "YOUR_EMAIL"
+      SMTP_PASS: "YOUR_APP_PASSWORD"
+      MAIL_FROM: "no-reply@yourdomain.com"
+
+      STRIPE_SECRET_KEY: "sk_live_xxx"
+      STRIPE_WEBHOOK_SECRET: "whsec_xxx"
+      STRIPE_PRICE_MONTHLY_200: "price_xxx"
+      STRIPE_PRICE_QUARTERLY_400: "price_xxx"
+      STRIPE_PRICE_YEARLY_600: "price_xxx"
+    depends_on:
+      - db
+    ports:
+      - "127.0.0.1:5000:5000"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
