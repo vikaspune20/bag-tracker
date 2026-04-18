@@ -16,7 +16,8 @@ services:
       PORT: "5000"
       DATABASE_URL: "postgresql://postgres:Henok_USA@2025@db:5432/bagtracker?schema=public"
       JWT_SECRET: "CHANGE_ME_JWT_SECRET"
-      APP_URL: "https://main.d29thuqnvkrhh9.amplifyapp.com"
+      # All-in-one on EC2: same URL users open in the browser (http://YOUR_PUBLIC_IP or Elastic IP)
+      APP_URL: "http://16.170.228.223:5000"
 
       SMTP_HOST: "smtp.gmail.com"
       SMTP_PORT: "587"
@@ -31,8 +32,9 @@ services:
       STRIPE_PRICE_YEARLY_600: "price_xxx"
     depends_on:
       - db
+    # Only localhost — Nginx on the host proxies /api and /uploads to this port
     ports:
-      - "5000:5000"
+      - "127.0.0.1:5000:5000"
     restart: unless-stopped
 
 volumes:
