@@ -1,18 +1,39 @@
-version: '3.8'
-
 services:
   db:
     image: postgres:15
-    container_name: bagtracker_postgres
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: CHANGE_ME_DB_PASSWORD
       POSTGRES_DB: bagtracker
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    restart: always
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      PORT: "5000"
+      DATABASE_URL: "postgresql://postgres:CHANGE_ME_DB_PASSWORD@db:5432/bagtracker?schema=public"
+      JWT_SECRET: "CHANGE_ME_JWT_SECRET"
+      APP_URL: "https://app.yourdomain.com"
+
+      SMTP_HOST: "smtp.gmail.com"
+      SMTP_PORT: "587"
+      SMTP_USER: "YOUR_EMAIL"
+      SMTP_PASS: "YOUR_APP_PASSWORD"
+      MAIL_FROM: "no-reply@yourdomain.com"
+
+      STRIPE_SECRET_KEY: "sk_live_xxx"
+      STRIPE_WEBHOOK_SECRET: "whsec_xxx"
+      STRIPE_PRICE_MONTHLY_200: "price_xxx"
+      STRIPE_PRICE_QUARTERLY_400: "price_xxx"
+      STRIPE_PRICE_YEARLY_600: "price_xxx"
+    depends_on:
+      - db
+    ports:
+      - "127.0.0.1:5000:5000"
+    restart: unless-stopped
 
 volumes:
   postgres_data:
