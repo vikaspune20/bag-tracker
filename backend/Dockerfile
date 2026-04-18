@@ -7,7 +7,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-cert
   && rm -rf /var/lib/apt/lists/*
 
 COPY package*.json ./
-RUN npm ci
+# Use npm install so the image builds when package-lock.json is missing on the server.
+# Prefer committing package-lock.json and using `npm ci` in CI for reproducible installs.
+RUN npm install
 
 COPY prisma ./prisma
 RUN npx prisma generate
