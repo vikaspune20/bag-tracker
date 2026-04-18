@@ -70,9 +70,11 @@ export const getTrackingByTag = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
     const { tag } = req.params;
-    const bag = await prisma.bag.findUnique({
+    // `tagNumber` is not globally unique in the current Prisma schema
+    // (it uses a composite unique). Use findFirst to allow lookup by tag alone.
+    const bag = await prisma.bag.findFirst({
       where: { tagNumber: tag },
-      include: { trip: true }
+      include: { trip: true },
     });
     if (!bag) return res.status(404).json({ message: 'Bag not found' });
     if (bag.trip.userId !== req.user.id && req.user.role !== 'ADMIN') {
