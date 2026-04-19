@@ -12,9 +12,21 @@ export const Contact = () => {
       <footer className="border-t border-slate-200/90 bg-white py-8">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-5 text-center text-xs text-landing-muted md:flex-row md:px-8 md:text-left">
           <p>© {new Date().getFullYear()} JC SMARTBAG</p>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap justify-center gap-4">
             <Link to="/about" className="text-cyan-700 hover:underline">
               About
+            </Link>
+            <Link to="/terms" className="text-cyan-700 hover:underline">
+              Terms
+            </Link>
+            <Link to="/privacy" className="text-cyan-700 hover:underline">
+              Privacy
+            </Link>
+            <Link to="/refunds" className="text-cyan-700 hover:underline">
+              Refunds &amp; Cancellation
+            </Link>
+            <Link to="/contact-info" className="text-cyan-700 hover:underline">
+              Contact info
             </Link>
             <Link to="/home" className="text-cyan-700 hover:underline">
               Home
