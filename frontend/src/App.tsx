@@ -17,6 +17,10 @@ import { SubscriptionResult } from './pages/SubscriptionResult';
 import { ResetPassword } from './pages/ResetPassword';
 import { About } from './pages/About';
 import { Contact } from './pages/Contact';
+import { TermsOfService } from './pages/TermsOfService';
+import { PrivacyPolicy } from './pages/PrivacyPolicy';
+import { RefundCancellationPolicy } from './pages/RefundCancellationPolicy';
+import { ContactInformation } from './pages/ContactInformation';
 
 const App = () => {
   const checkAuth = useAuthStore(state => state.checkAuth);
@@ -36,6 +40,10 @@ const App = () => {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
+        <Route path="/terms" element={<TermsOfService />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/refunds" element={<RefundCancellationPolicy />} />
+        <Route path="/contact-info" element={<ContactInformation />} />
 
         {/* Protected Routes inside Layout */}
         <Route element={<Layout />}>

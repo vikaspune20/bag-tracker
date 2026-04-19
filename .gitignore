@@ -8,3 +8,4 @@
 # /backend/prisma/schema.sql
 # /backend/prisma/schema.prisma
 # /backend/prisma/schema.sqlbackend/.env 
+frontend/.env.production
