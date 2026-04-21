@@ -19,7 +19,7 @@ export const Trips = () => {
         try {
             setLoading(true);
             const { data } = await api.get('/trips');
-            setTrips(data.trips);
+            setTrips(data.data);
         } catch (error) {
             console.error(error);
         } finally {
