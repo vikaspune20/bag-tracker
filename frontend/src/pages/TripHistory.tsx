@@ -19,7 +19,7 @@ export const TripHistory = () => {
             
             // Fetch detailed bag info for all trips (or could do it on expand)
             // For simplicity, we can fetch all trips, then when expanded, fetch the specific trip by ID to get events if not included
-            setTrips(data.trips);
+            setTrips(data.data);
         } catch (error) {
             console.error(error);
         } finally {
@@ -37,7 +37,7 @@ export const TripHistory = () => {
         // Fetch detailed tracking events for this trip's bags
         try {
              const { data } = await api.get(`/trips/${tripId}`);
-             setTrips(prev => prev.map(t => t.id === tripId ? data.trip : t));
+             setTrips(prev => prev.map(t => t.id === tripId ? data.data : t));
         } catch (err) {
              console.error('Failed to load trip details', err);
         }
