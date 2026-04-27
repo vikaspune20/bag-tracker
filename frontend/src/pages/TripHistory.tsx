@@ -19,7 +19,7 @@ export const TripHistory = () => {
             
             // Fetch detailed bag info for all trips (or could do it on expand)
             // For simplicity, we can fetch all trips, then when expanded, fetch the specific trip by ID to get events if not included
-            setTrips(data.data);
+            setTrips(data.trips);
         } catch (error) {
             console.error(error);
         } finally {

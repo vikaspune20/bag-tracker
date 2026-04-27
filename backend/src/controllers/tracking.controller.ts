@@ -70,7 +70,7 @@ export const getTrackingByTag = async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
     const { tag } = req.params;
-    const bag = await prisma.bag.findUnique({
+    const bag = await prisma.bag.findFirst({
       where: { tagNumber: tag },
       include: { trip: true }
     });

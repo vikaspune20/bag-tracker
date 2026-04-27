@@ -149,7 +149,7 @@ export const getTrips = async (req: AuthRequest, res: Response) => {
     });
 
     return res.status(200).json({
-      data: trips
+      trips
     });
 
   } catch (error: any) {
