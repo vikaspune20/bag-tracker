@@ -1,0 +1,2 @@
+Source Address | Target Address | Type | Country Code
+/<*> | 	/index.html |	200 (Rewrite) |

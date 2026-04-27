@@ -22,7 +22,7 @@ services:
       DATABASE_URL: "postgresql://postgres:Henok_USA@2025@db:5432/bagtracker?schema=public"
       JWT_SECRET: "CHANGE_ME_JWT_SECRET"
       # Canonical site URL (match Amplify “primary domain” after redirects)
-      APP_URL: "https://jcsmartbag.com"
+      APP_URL: "https://www.jcsmartbag.com"
 
       SMTP_HOST: "smtp.gmail.com"
       SMTP_PORT: "587"
@@ -31,10 +31,10 @@ services:
       MAIL_FROM: "no-reply@jcsmartbag.com"
 
       STRIPE_SECRET_KEY: "sk_live_xxx"
-      STRIPE_WEBHOOK_SECRET: "whsec_xxx"
-      STRIPE_PRICE_MONTHLY_200: "price_xxx"
-      STRIPE_PRICE_QUARTERLY_400: "price_xxx"
-      STRIPE_PRICE_YEARLY_600: "price_xxx"
+      STRIPE_WEBHOOK_SECRET: "whsewhsec_xxxc"
+      STRIPE_PRICE_MONTHLY_200: "price_1TGOML1rWpYYCBpABYJzBkfi"
+      STRIPE_PRICE_QUARTERLY_400: "price_1TGONf1rWpYYCBpAk5U3v6Vu"
+      STRIPE_PRICE_YEARLY_600: "price_1TGOMm1rWpYYCBpAf4R5uHo8"
     depends_on:
       - db
     # Localhost only — Nginx on EC2 proxies https://api.jcsmartbag.com → this port

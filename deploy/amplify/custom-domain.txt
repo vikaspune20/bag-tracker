@@ -1,0 +1,16 @@
+Custom domains
+
+Custom domain: jcsmartbag.com 2
+
+Status: Available
+SSL certificate: Amplify managed
+
+https://jcsmartbag.com	main	-
+https://www.jcsmartbag.com	main	-
+
+
+
+
+amplifyapp.com 1
+Status: Available
+https://main.d29thuqnvkrhh9.amplifyapp.com	main	-
