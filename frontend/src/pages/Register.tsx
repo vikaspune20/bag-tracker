@@ -298,7 +298,9 @@ export const Register = () => {
       nextErrors.zip = 'Please enter a valid US ZIP (e.g. 12345 or 12345-6789).';
     }
 
-    if (!identificationNo) nextErrors.identificationNo = 'Identification number / SSN is required.';
+    if (identificationNo && !/^\d{3}-?\d{2}-?\d{4}$/.test(identificationNo)) {
+      nextErrors.identificationNo = 'SSN must be in XXX-XX-XXXX format.';
+    }
 
     if (!password) nextErrors.password = 'Password is required.';
     else if (password.length < 8) nextErrors.password = 'Password must be at least 8 characters.';
@@ -326,8 +328,15 @@ export const Register = () => {
 
     try {
       const resp = await api.post('/auth/register', data);
-      loginAction(resp.data.user, resp.data.token);
-      navigate('/dashboard');
+      if (resp.data?.requiresOtp && resp.data?.email) {
+        navigate(`/verify-email?email=${encodeURIComponent(resp.data.email)}`);
+        return;
+      }
+      // Backwards-compatible path: server returned a token directly.
+      if (resp.data?.token) {
+        loginAction(resp.data.user, resp.data.token);
+        navigate('/dashboard');
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Registration failed');
     } finally {
@@ -623,8 +632,8 @@ export const Register = () => {
             </div>
 
             <div>
-              <label className={labelClass} htmlFor="reg-id">Identification Number / SSN</label>
-              <input id="reg-id" name="identificationNo" required aria-invalid={!!fieldErrors.identificationNo} className={inputClassName(!!fieldErrors.identificationNo)} />
+              <label className={labelClass} htmlFor="reg-id">Identification Number / SSN <span className="text-landing-muted font-normal">(optional)</span></label>
+              <input id="reg-id" name="identificationNo" placeholder="XXX-XX-XXXX" aria-invalid={!!fieldErrors.identificationNo} className={inputClassName(!!fieldErrors.identificationNo)} />
               {fieldErrors.identificationNo && <p className="mt-1 text-xs text-red-600">{fieldErrors.identificationNo}</p>}
             </div>
 

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
-import logoImg from '../../../image.png';
 import { cn } from '../../lib/cn';
+import { Logo } from '../Logo';
 
 type Props = {
   className?: string;
@@ -58,10 +58,7 @@ export function LandingNav({ className }: Props) {
           className="flex items-center gap-3 text-left transition-opacity hover:opacity-90"
           onClick={() => setOpen(false)}
         >
-          <img src={logoImg} alt="JC SMARTBAG" className="h-10 w-10 object-contain md:h-12 md:w-12" />
-          <span className="text-base font-semibold tracking-tight text-landing-text md:text-lg">
-            JC SMARTBAG
-          </span>
+          <Logo size="sm" />
         </Link>
 
         <nav className="hidden items-center gap-6 lg:flex xl:gap-8">

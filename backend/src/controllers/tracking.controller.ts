@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import prisma from '../utils/prisma';
+import { sendTrackingUpdateEmail } from '../utils/email';
 
 export const addTrackingEvent = async (req: AuthRequest, res: Response) => {
   try {
@@ -34,6 +35,17 @@ export const addTrackingEvent = async (req: AuthRequest, res: Response) => {
             type: 'BAGGAGE_UPDATE'
         }
     });
+
+    // Best-effort email
+    const owner = await prisma.user.findUnique({ where: { id: bag.trip.userId } });
+    if (owner) {
+      sendTrackingUpdateEmail(owner.email, owner.fullName, {
+        tagNumber: bag.tagNumber,
+        status,
+        airportLocation,
+        remarks,
+      }).catch(() => {});
+    }
 
     res.status(201).json({ event: newEvent });
   } catch (error: any) {

@@ -1,8 +1,9 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import api from '../utils/api';
-import { Loader2, CheckCircle2, Plane, Navigation, PackageCheck, MapPin, Briefcase } from 'lucide-react';
+import { Loader2, CheckCircle2, Plane, Navigation, PackageCheck, MapPin, Briefcase, Cpu } from 'lucide-react';
 import { format } from 'date-fns';
+import { SubscriptionGate } from '../components/SubscriptionGate';
 
 const stageIcons: Record<string, any> = {
     'Checked-in': <CheckCircle2 size={24} className="text-blue-500"/>,
@@ -11,7 +12,13 @@ const stageIcons: Record<string, any> = {
     'Arrived': <PackageCheck size={24} className="text-green-600"/>,
 };
 
-export const Tracking = () => {
+export const Tracking = () => (
+    <SubscriptionGate feature="Tracking">
+        <TrackingInner />
+    </SubscriptionGate>
+);
+
+const TrackingInner = () => {
     const [searchParams] = useSearchParams();
     const bagId = searchParams.get('bagId');
     const [loading, setLoading] = useState(false);
@@ -106,8 +113,13 @@ export const Tracking = () => {
                                                 {bag.trip?.departureAirport && bag.trip?.destinationAirport ? ` • ${bag.trip.departureAirport} → ${bag.trip.destinationAirport}` : ''}
                                             </p>
                                         </div>
-                                        <div className="shrink-0">
+                                        <div className="shrink-0 flex flex-col items-end gap-1">
                                             {stageIcons[stage] || <MapPin size={24} className="text-gray-400" />}
+                                            {bag.device && (
+                                                <span className="px-2 py-0.5 text-[10px] rounded-full bg-airline-blue text-white font-bold flex items-center gap-1">
+                                                    <Cpu size={10}/> Device
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="px-5 pb-5">

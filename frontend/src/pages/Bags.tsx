@@ -1,14 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../utils/api';
-import { Briefcase, Plus, Loader2, Trash2 } from 'lucide-react';
+import { Briefcase, Plus, Loader2, Trash2, Cpu } from 'lucide-react';
+import { SubscriptionGate } from '../components/SubscriptionGate';
+
+type AvailableDevice = { id: string; deviceId: string; expiresAt: string };
 
 export const Bags = () => {
     const [bags, setBags] = useState<any[]>([]);
     const [trips, setTrips] = useState<any[]>([]);
+    const [devices, setDevices] = useState<AvailableDevice[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [uploading, setUploading] = useState(false);
+    const [tagNumber, setTagNumber] = useState('');
+    const [pickedDevice, setPickedDevice] = useState('');
 
     useEffect(() => {
         loadData();
@@ -17,12 +23,14 @@ export const Bags = () => {
     const loadData = async () => {
         try {
             setLoading(true);
-            const [bagsRes, tripsRes] = await Promise.all([
+            const [bagsRes, tripsRes, devicesRes] = await Promise.all([
                 api.get('/bags'),
-                api.get('/trips')
+                api.get('/trips'),
+                api.get('/devices?available=true'),
             ]);
             setBags(bagsRes.data.bags);
             setTrips(tripsRes.data.trips);
+            setDevices(devicesRes.data.devices || []);
         } catch (error) {
             console.error(error);
         } finally {
@@ -30,19 +38,26 @@ export const Bags = () => {
         }
     };
 
+    const openModal = () => {
+        setTagNumber('');
+        setPickedDevice('');
+        setShowModal(true);
+    };
+
     const handleAddBag = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setUploading(true);
         const formData = new FormData(e.currentTarget);
-        
+        formData.set('tagNumber', tagNumber.trim());
+
         try {
             await api.post('/bags', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             setShowModal(false);
             loadData();
-        } catch (error) {
-            alert('Error adding bag');
+        } catch (error: any) {
+            alert(error?.response?.data?.message || 'Error adding bag');
         } finally {
             setUploading(false);
         }
@@ -59,11 +74,12 @@ export const Bags = () => {
     };
 
     return (
+        <SubscriptionGate feature="Baggage Management">
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-gray-900">Baggage Management</h2>
-                <button 
-                    onClick={() => setShowModal(true)}
+                <button
+                    onClick={openModal}
                     className="flex items-center space-x-2 bg-airline-blue text-white px-5 py-2.5 rounded-xl font-medium shadow-sm hover:bg-airline-dark transition-all"
                 >
                     <Plus size={20} />
@@ -95,11 +111,16 @@ export const Bags = () => {
                                 <div className="absolute top-2 right-2 bg-black bg-opacity-60 text-white px-2 py-1 rounded-md text-xs font-bold font-mono tracking-widest">
                                     {bag.tagNumber}
                                 </div>
+                                {bag.device && (
+                                    <div className="absolute bottom-2 left-2 bg-airline-blue text-white px-2 py-1 rounded-md text-[11px] font-bold flex items-center gap-1">
+                                        <Cpu size={12}/> Device
+                                    </div>
+                                )}
                             </div>
                             <div className="p-4 flex-1 flex flex-col">
                                 <h4 className="font-bold text-lg text-gray-900 mb-1">{bag.weightLbs} lbs</h4>
                                 <p className="text-sm text-gray-500 flex-1">{bag.description || 'No description provided.'}</p>
-                                
+
                                 <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center">
                                      <Link to={`/tracking?bagId=${bag.id}`} className="text-sm font-bold text-airline-sky hover:text-airline-blue">View Tracking</Link>
                                      <button onClick={() => handleDelete(bag.id)} className="text-gray-400 hover:text-red-500 transition-colors">
@@ -131,8 +152,46 @@ export const Bags = () => {
                                     </select>
                                 </div>
                                 <div>
+                                    <label className="block text-sm font-medium text-gray-700">Tracking Device (optional)</label>
+                                    <select
+                                        value={pickedDevice}
+                                        onChange={(e) => {
+                                            const v = e.target.value;
+                                            setPickedDevice(v);
+                                            if (v) setTagNumber(v);
+                                        }}
+                                        className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:ring-airline-sky sm:text-sm"
+                                    >
+                                        <option value="">— No device, type a tag manually —</option>
+                                        {devices.map((d) => (
+                                            <option key={d.id} value={d.deviceId}>{d.deviceId}</option>
+                                        ))}
+                                    </select>
+                                    {devices.length === 0 && (
+                                        <p className="mt-1 text-xs text-gray-500">
+                                            No available devices. <Link to="/devices" className="text-airline-blue font-bold hover:underline">Buy a tracker</Link>.
+                                        </p>
+                                    )}
+                                </div>
+                                <div>
                                     <label className="block text-sm font-medium text-gray-700">Tag Number</label>
-                                    <input name="tagNumber" required placeholder="e.g. AA-001293" className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 font-mono sm:text-sm" />
+                                    <input
+                                        name="tagNumber"
+                                        required
+                                        value={tagNumber}
+                                        onChange={(e) => {
+                                            setTagNumber(e.target.value);
+                                            if (pickedDevice && e.target.value !== pickedDevice) setPickedDevice('');
+                                        }}
+                                        readOnly={Boolean(pickedDevice)}
+                                        placeholder="e.g. AA-001293"
+                                        className={`mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 font-mono sm:text-sm ${pickedDevice ? 'bg-blue-50' : ''}`}
+                                    />
+                                    {pickedDevice && (
+                                        <p className="mt-1 text-xs text-airline-blue flex items-center gap-1">
+                                            <Cpu size={12}/> Using tracking device {pickedDevice}
+                                        </p>
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">Weight (lbs)</label>
@@ -146,7 +205,7 @@ export const Bags = () => {
                                     <label className="block text-sm font-medium text-gray-700">Description (Optional)</label>
                                     <textarea name="description" rows={2} placeholder="Red Samsonite suitcase..." className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 sm:text-sm"></textarea>
                                 </div>
-                                
+
                                 <div className="pt-4 flex justify-end">
                                     <button type="submit" disabled={uploading} className="bg-airline-blue text-white px-6 py-2 rounded-lg font-bold shadow hover:bg-airline-dark transition-colors flex items-center">
                                         {uploading ? <Loader2 className="animate-spin mr-2" size={16}/> : 'Save Bag'}
@@ -158,5 +217,6 @@ export const Bags = () => {
                 </div>
             )}
         </div>
+        </SubscriptionGate>
     );
 };

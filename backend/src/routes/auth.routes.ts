@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { register, login, getProfile, updateProfile, requestPasswordReset, resetPassword } from '../controllers/auth.controller';
+import { register, login, getProfile, updateProfile, requestPasswordReset, resetPassword, verifyEmailOtp, resendOtp, sendTestEmailEndpoint, deleteUserForTesting } from '../controllers/auth.controller';
 import { authenticateToken } from '../middlewares/auth.middleware';
 
 const router = Router();
@@ -32,6 +32,11 @@ router.get('/app-version', (req, res) => {
 });
 router.post('/register', register);
 router.post('/login', login);
+router.post('/verify-otp', verifyEmailOtp);
+router.post('/resend-otp', resendOtp);
+// Dev-only diagnostics (404 in production via NODE_ENV check inside controllers).
+router.get('/dev/test-email', sendTestEmailEndpoint);
+router.post('/dev/delete-user', deleteUserForTesting);
 router.post('/forgot-password', requestPasswordReset);
 router.post('/reset-password', resetPassword);
 router.get('/profile', authenticateToken, getProfile);

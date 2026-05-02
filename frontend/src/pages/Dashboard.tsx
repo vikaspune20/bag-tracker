@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import { Plane, Briefcase, MapPin, Bell } from 'lucide-react';
+import { Plane, Briefcase, MapPin, Bell, Clock, Lock } from 'lucide-react';
+import { format, formatDistanceToNow } from 'date-fns';
 import api from '../utils/api';
+import { useSubscriptionStatus } from '../hooks/useSubscriptionStatus';
 
 export const Dashboard = () => {
   const user = useAuthStore(state => state.user);
   const [stats, setStats] = useState({ upcomingTrips: 0, totalBags: 0, activeTracking: 0, totalTrips: 0 });
+  const { status: subStatus } = useSubscriptionStatus();
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -42,6 +45,43 @@ export const Dashboard = () => {
         <h2 className="text-3xl font-bold text-gray-900">Welcome {user?.fullName}!</h2>
         <p className="text-gray-500 mt-2 text-lg">Here is your baggage tracking overview.</p>
       </div>
+
+      {subStatus && !subStatus.active && subStatus.hasDevice && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-800 flex items-start gap-3">
+          <Lock className="mt-0.5" size={18} />
+          <div className="flex-1">
+            <strong>Your device subscription has expired.</strong> Adding trips, bags, and live tracking are paused.
+            Renew your subscription to restore access.
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <Link to="/subscription" className="font-bold text-red-700 hover:underline whitespace-nowrap">Renew</Link>
+          </div>
+        </div>
+      )}
+
+      {subStatus && !subStatus.active && !subStatus.hasDevice && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800 flex items-start gap-3">
+          <Clock className="mt-0.5" size={18} />
+          <div className="flex-1">
+            <strong>Get started with JC Smartbag.</strong> Purchase a tracking device to unlock trips, bag management, and live tracking — every device includes <strong>1 month free</strong>.
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <Link to="/devices" className="font-bold text-airline-blue hover:underline whitespace-nowrap">Buy Device</Link>
+          </div>
+        </div>
+      )}
+
+      {subStatus?.active && subStatus.devices.some(d => d.subPlan === 'DEVICE_BONUS' && d.subStatus === 'ACTIVE') && subStatus.expiryDate && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800 flex items-start gap-3">
+          <Clock className="mt-0.5" size={18} />
+          <div className="flex-1">
+            You're on the <strong>1-month free trial</strong> from your device purchase. It expires on{' '}
+            <strong>{format(new Date(subStatus.expiryDate), 'MMM d, yyyy')}</strong>{' '}
+            ({formatDistanceToNow(new Date(subStatus.expiryDate), { addSuffix: true })}).
+          </div>
+          <Link to="/subscription" className="font-bold text-airline-blue hover:underline whitespace-nowrap">Subscribe</Link>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {statCards.map((stat, idx) => (

@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 import { body, validationResult } from 'express-validator';
 import prisma from '../utils/prisma';
+import { sendOtpEmail, sendWelcomeEmail, sendTestEmail } from '../utils/email';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supers3cr3tjwtk3y';
 const APP_URL = process.env.APP_URL || 'http://localhost:5173';
@@ -51,8 +52,8 @@ export const registerValidation = [
     .matches(/^\d{5}(-\d{4})?$/).withMessage('ZIP code must be 5 digits (or ZIP+4)'),
 
   body('identificationNo')
+    .optional({ checkFalsy: true })
     .trim()
-    .notEmpty().withMessage('SSN / Identification number is required')
     .matches(/^\d{3}-?\d{2}-?\d{4}$/).withMessage('SSN must be in XXX-XX-XXXX format'),
 
   body('password')
@@ -103,6 +104,116 @@ export const resetPasswordValidation = [
 ];
 
 // ─────────────────────────────────────────────
+//  EMAIL OTP HELPERS
+// ─────────────────────────────────────────────
+
+function generateOtp(): string {
+  return String(crypto.randomInt(0, 1_000_000)).padStart(6, '0');
+}
+
+export const verifyEmailOtp = async (req: Request, res: Response) => {
+  try {
+    const { email, otp } = req.body as { email?: string; otp?: string };
+    if (!email || !otp) return res.status(400).json({ message: 'email and otp are required' });
+
+    const user = await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } });
+    if (!user) return res.status(400).json({ message: 'Invalid code or email' });
+    if (user.emailVerified) {
+      const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+      return res.status(200).json({ message: 'Already verified', user: sanitizeUser(user), token });
+    }
+    if (!user.emailOtp || !user.emailOtpExpiry || user.emailOtpExpiry.getTime() < Date.now()) {
+      return res.status(400).json({ message: 'Code has expired. Request a new one.' });
+    }
+    if (user.emailOtp !== String(otp).trim()) {
+      return res.status(400).json({ message: 'Invalid code' });
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: user.id },
+      data: { emailVerified: true, emailOtp: null, emailOtpExpiry: null },
+    });
+
+    sendWelcomeEmail(updated.email, updated.fullName).catch(() => {});
+
+    const token = jwt.sign({ id: updated.id, role: updated.role }, JWT_SECRET, { expiresIn: '7d' });
+    return res.status(200).json({
+      message: 'Email verified',
+      user: sanitizeUser(updated),
+      token,
+    });
+  } catch (error: any) {
+    return res.status(500).json({ message: 'Verification failed', error: error.message });
+  }
+};
+
+// ─────────────────────────────────────────────
+//  TEMP / DEV ONLY — SMTP test endpoint
+//  GET /api/auth/dev/test-email?to=someone@example.com
+//  Disabled when NODE_ENV=production.
+// ─────────────────────────────────────────────
+export const sendTestEmailEndpoint = async (req: Request, res: Response) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(404).json({ message: 'Not found' });
+  }
+  const to = String(req.query.to || '').trim();
+  if (!to || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
+    return res.status(400).json({ message: '?to=<valid email> is required' });
+  }
+
+  const smtpConfigured = Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
+  const result: any = await sendTestEmail(to);
+
+  if (result?.skipped) {
+    return res.status(200).json({
+      ok: false,
+      to,
+      smtpConfigured: false,
+      message: 'Email send was skipped — SMTP_HOST/USER/PASS not configured. Set them in backend/.env and restart.',
+    });
+  }
+  if (result?.error) {
+    return res.status(200).json({
+      ok: false,
+      to,
+      smtpConfigured,
+      error: result.error,
+      hint: 'For Gmail, ensure SMTP_PASS is a 16-char App Password (not your regular password) and 2-Step Verification is on.',
+    });
+  }
+  return res.status(200).json({
+    ok: true,
+    to,
+    smtpConfigured,
+    messageId: result?.messageId || null,
+  });
+};
+
+export const resendOtp = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body as { email?: string };
+    if (!email) return res.status(400).json({ message: 'email is required' });
+
+    const user = await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } });
+    // Always 200 to avoid email enumeration
+    if (!user || user.emailVerified) {
+      return res.status(200).json({ message: 'If that email exists and is unverified, a new code has been sent.' });
+    }
+
+    const otp = generateOtp();
+    const otpExpiry = new Date(Date.now() + 15 * 60 * 1000);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { emailOtp: otp, emailOtpExpiry: otpExpiry },
+    });
+    sendOtpEmail(user.email, user.fullName, otp).catch(() => {});
+    return res.status(200).json({ message: 'A new code has been sent.' });
+  } catch (error: any) {
+    return res.status(500).json({ message: 'Could not resend code', error: error.message });
+  }
+};
+
+// ─────────────────────────────────────────────
 //  HELPER  — extract & return validation errors
 // ─────────────────────────────────────────────
 
@@ -137,6 +248,9 @@ export const register = async (req: Request, res: Response) => {
 
     const passwordHash = await bcrypt.hash(password, 12); // bumped to 12 rounds
 
+    const otp = generateOtp();
+    const otpExpiry = new Date(Date.now() + 15 * 60 * 1000);
+
     const newUser = await prisma.user.create({
       data: {
         fullName,
@@ -147,17 +261,20 @@ export const register = async (req: Request, res: Response) => {
         city,
         zip,                          // ← was missing before
         country: country || 'USA',
-        identificationNo,
+        identificationNo: identificationNo && String(identificationNo).trim() !== '' ? identificationNo : null,
         passwordHash,
+        emailVerified: false,
+        emailOtp: otp,
+        emailOtpExpiry: otpExpiry,
       },
     });
 
-    const token = jwt.sign({ id: newUser.id, role: newUser.role }, JWT_SECRET, { expiresIn: '7d' });
+    sendOtpEmail(newUser.email, newUser.fullName, otp).catch(() => {});
 
     return res.status(201).json({
-      message: 'Account created successfully',
-      user: sanitizeUser(newUser),
-      token,
+      message: 'Account created. Please verify your email with the code we just sent.',
+      email: newUser.email,
+      requiresOtp: true,
     });
   } catch (error: any) {
     return res.status(500).json({ message: 'Server error during registration', error: error.message });
@@ -180,6 +297,22 @@ export const login = async (req: Request, res: Response) => {
 
     if (!user || !isMatch) {
       return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    if (!user.emailVerified) {
+      // Re-issue OTP so the verification email is fresh
+      const otp = generateOtp();
+      const otpExpiry = new Date(Date.now() + 15 * 60 * 1000);
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { emailOtp: otp, emailOtpExpiry: otpExpiry },
+      });
+      sendOtpEmail(user.email, user.fullName, otp).catch(() => {});
+      return res.status(403).json({
+        message: 'Please verify your email to continue. We just sent you a fresh code.',
+        requiresOtp: true,
+        email: user.email,
+      });
     }
 
     const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
@@ -310,6 +443,79 @@ export const resetPassword = async (req: Request, res: Response) => {
   } catch (error: any) {
     return res.status(500).json({ message: 'Failed to reset password', error: error.message });
   }
+};
+
+// ─────────────────────────────────────────────
+//  TEMP / DEV ONLY — nuke a user + all data
+//  POST /api/auth/dev/delete-user  { email }
+//  Disabled when NODE_ENV=production.
+// ─────────────────────────────────────────────
+export const deleteUserForTesting = async (req: Request, res: Response) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(404).json({ message: 'Not found' });
+  }
+
+  const { email } = req.body as { email?: string };
+  if (!email) return res.status(400).json({ message: 'email is required' });
+
+  const user = await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } });
+  if (!user) return res.status(404).json({ message: 'User not found' });
+
+  // Collect trip/bag ids so we can cascade child rows
+  const trips = await prisma.trip.findMany({ where: { userId: user.id }, select: { id: true } });
+  const tripIds = trips.map((t) => t.id);
+
+  const bags = tripIds.length
+    ? await prisma.bag.findMany({ where: { tripId: { in: tripIds } }, select: { id: true } })
+    : [];
+  const bagIds = bags.map((b) => b.id);
+
+  // Delete in FK-safe order (children first)
+  const [trackingLogs, notifications, bagsDeleted, tripsDeleted, subscriptions, devices, orders] =
+    await prisma.$transaction([
+      // 1. TrackingLog → Bag
+      bagIds.length
+        ? prisma.trackingLog.deleteMany({ where: { bagId: { in: bagIds } } })
+        : prisma.trackingLog.deleteMany({ where: { bagId: { in: [] } } }),
+
+      // 2. Notification (userId; also has bagId FK — delete before Bag)
+      prisma.notification.deleteMany({ where: { userId: user.id } }),
+
+      // 3. Bag → Trip
+      bagIds.length
+        ? prisma.bag.deleteMany({ where: { id: { in: bagIds } } })
+        : prisma.bag.deleteMany({ where: { id: { in: [] } } }),
+
+      // 4. Trip
+      prisma.trip.deleteMany({ where: { userId: user.id } }),
+
+      // 5. Subscription
+      prisma.subscription.deleteMany({ where: { userId: user.id } }),
+
+      // 6. TrackingDevice (FK → DeviceOrder; must precede DeviceOrder delete)
+      prisma.trackingDevice.deleteMany({ where: { userId: user.id } }),
+
+      // 7. DeviceOrder
+      prisma.deviceOrder.deleteMany({ where: { userId: user.id } }),
+    ]);
+
+  // 8. User itself (outside transaction so it sees committed deletes above)
+  await prisma.user.delete({ where: { id: user.id } });
+
+  return res.status(200).json({
+    ok: true,
+    email,
+    deleted: {
+      trackingLogs: trackingLogs.count,
+      notifications: notifications.count,
+      bags: bagsDeleted.count,
+      trips: tripsDeleted.count,
+      subscriptions: subscriptions.count,
+      devices: devices.count,
+      orders: orders.count,
+      user: 1,
+    },
+  });
 };
 
 // ─────────────────────────────────────────────

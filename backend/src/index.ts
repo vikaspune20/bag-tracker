@@ -11,6 +11,8 @@ import subscriptionRoutes from './routes/subscription.routes';
 import stripeRoutes from './routes/stripe.routes';
 import path from 'path';
 import dashboardRoutes from './routes/dashboard.routes';
+import deviceRoutes from './routes/device.routes';
+import cronRoutes from './routes/cron.routes';
 
 dotenv.config();
 
@@ -40,6 +42,8 @@ app.use('/api/tracking', trackingRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/devices', deviceRoutes);
+app.use('/api/internal', cronRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

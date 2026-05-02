@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import api from '../utils/api';
+import { Logo } from '../components/Logo';
 
 export const ResetPassword = () => {
   const [params] = useSearchParams();
@@ -46,6 +47,9 @@ export const ResetPassword = () => {
   return (
     <div className="min-h-screen bg-airline-light flex justify-center items-center p-4">
       <div className="w-full max-w-md bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+        <div className="flex justify-center mb-6">
+          <Logo />
+        </div>
         <h1 className="text-2xl font-bold mb-4">{token ? 'Set New Password' : 'Reset Password'}</h1>
         {error && <p className="text-red-600 text-sm mb-3">{error}</p>}
         {message && <p className="text-green-600 text-sm mb-3">{message}</p>}

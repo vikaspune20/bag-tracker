@@ -15,12 +15,20 @@ import { Profile } from './pages/Profile';
 import { Subscription } from './pages/Subscription';
 import { SubscriptionResult } from './pages/SubscriptionResult';
 import { ResetPassword } from './pages/ResetPassword';
+import { VerifyEmail } from './pages/VerifyEmail';
 import { About } from './pages/About';
 import { Contact } from './pages/Contact';
 import { TermsOfService } from './pages/TermsOfService';
 import { PrivacyPolicy } from './pages/PrivacyPolicy';
 import { RefundCancellationPolicy } from './pages/RefundCancellationPolicy';
 import { ContactInformation } from './pages/ContactInformation';
+import { DeviceShop } from './pages/DeviceShop';
+import { DeviceCheckout } from './pages/DeviceCheckout';
+import { DeviceOrderResult } from './pages/DeviceOrderResult';
+import { MyDevices } from './pages/MyDevices';
+import { DeviceOrders } from './pages/DeviceOrders';
+import { DeviceInvoice } from './pages/DeviceInvoice';
+import { SubscriptionInvoice } from './pages/SubscriptionInvoice';
 
 const App = () => {
   const checkAuth = useAuthStore(state => state.checkAuth);
@@ -38,6 +46,7 @@ const App = () => {
         <Route path="/register" element={<Register />} />
         <Route path="/subscription-result" element={<SubscriptionResult />} />
         <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/terms" element={<TermsOfService />} />
@@ -55,6 +64,13 @@ const App = () => {
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/subscription" element={<Subscription />} />
+          <Route path="/devices" element={<DeviceShop />} />
+          <Route path="/devices/checkout" element={<DeviceCheckout />} />
+          <Route path="/devices/order-result" element={<DeviceOrderResult />} />
+          <Route path="/my-devices" element={<MyDevices />} />
+          <Route path="/orders" element={<DeviceOrders />} />
+          <Route path="/orders/:id/invoice" element={<DeviceInvoice />} />
+          <Route path="/subscription-invoice/:id" element={<SubscriptionInvoice />} />
         </Route>
 
         {/* Catch All */}

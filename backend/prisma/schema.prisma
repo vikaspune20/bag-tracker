@@ -17,12 +17,17 @@ model User {
   city             String
   zip              String?
   country          String    @default("United States")
-  identificationNo String
+  identificationNo String?
   passwordHash     String
   profilePicUrl    String?
   role             String    @default("USER")
   resetToken       String?
   resetTokenExpiry DateTime?
+  emailVerified    Boolean   @default(false)
+  emailOtp         String?
+  emailOtpExpiry   DateTime?
+  expiryReminder7SentAt DateTime?
+  expiryReminder0SentAt DateTime?
   isPremium        Boolean   @default(false)
   planType         String?
   subscriptionId   String?
@@ -35,6 +40,8 @@ model User {
   trips         Trip[]
   notifications Notification[]
   subscriptions Subscription[]
+  devices       TrackingDevice[]
+  deviceOrders  DeviceOrder[]
 }
 
 model Trip {
@@ -104,6 +111,7 @@ model Notification {
 model Subscription {
   id                    String    @id @default(uuid())
   userId                String
+  deviceId              String?   // TrackingDevice.id this payment covers (null = legacy app-level)
   planMonths            Int
   amount                Int
   stripePaymentIntentId String    @unique
@@ -115,6 +123,62 @@ model Subscription {
   updatedAt             DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, status])
+  @@index([deviceId])
+}
+
+model TrackingDevice {
+  id          String   @id @default(uuid())
+  userId      String
+  orderId     String
+  deviceId    String   @unique
+  status      String   @default("ACTIVE")   // ACTIVE | EXPIRED (hardware)
+  purchasedAt DateTime @default(now())
+  expiresAt   DateTime                       // hardware expiry (1 year)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // ── Per-device subscription ──────────────────
+  subStatus            String   @default("NONE") // NONE | ACTIVE | EXPIRED
+  subPlan              String?                    // MONTHLY_200 | QUARTERLY_400 | YEARLY_600 | DEVICE_BONUS
+  subExpiry            DateTime?                  // when this device's subscription ends
+  subStripeSubId       String?                    // reserved for future recurring
+  subCancelAtPeriodEnd Boolean  @default(false)
+
+  user  User        @relation(fields: [userId], references: [id])
+  order DeviceOrder @relation(fields: [orderId], references: [id])
+
+  @@index([userId, status])
+  @@index([userId, subStatus])
+}
+
+model DeviceOrder {
+  id                    String    @id @default(uuid())
+  userId                String
+  productSku            String
+  productName           String
+  quantity              Int
+  unitAmount            Int
+  totalAmount           Int
+  currency              String    @default("usd")
+  stripeSessionId       String?   @unique
+  stripePaymentIntentId String?   @unique
+  status                String    @default("PENDING")
+  shippingName          String
+  shippingPhone         String
+  shippingAddressLine   String
+  shippingCity          String
+  shippingState         String
+  shippingZip           String
+  shippingCountry       String    @default("United States")
+  bonusGranted          Boolean   @default(false)
+  paidAt                DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user    User             @relation(fields: [userId], references: [id])
+  devices TrackingDevice[]
 
   @@index([userId, status])
 }

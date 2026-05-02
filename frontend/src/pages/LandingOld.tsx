@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { PlaneTakeoff, ShieldCheck, MapPin } from 'lucide-react';
-import logoImg from '../../image.png';
+import { Logo } from '../components/Logo';
 
 export const Landing = () => {
   return (
@@ -8,8 +8,7 @@ export const Landing = () => {
       {/* Navbar */}
       <nav className="flex justify-between items-center py-6 px-10 bg-white shadow-sm">
         <div className="flex items-center space-x-2 text-airline-blue text-2xl font-bold tracking-tight">
-          <img src={logoImg} alt="JC SMARTBAG" className="w-16 h-16 object-contain" />
-          <span>JC SMARTBAG</span>
+          <Logo size="sm" />
         </div>
         <div className="space-x-4">
           <Link to="/login" className="px-6 py-2.5 text-airline-blue font-medium hover:text-airline-dark transition-colors">Log In</Link>

@@ -7,7 +7,7 @@ import { allUsCities, usCitiesByStateLabel, usStates } from '../data/usData';
 import { AutocompleteInput } from '../components/common/AutocompleteInput';
 import { loadGoogleMapsScript } from '../utils/loadGoogleMapsScript';
 import { parseGooglePlaceComponents } from '../utils/parseGooglePlaceAddress';
-import jcSmartbagLogo from '../../image.png';
+import { Logo } from '../components/Logo';
 
 type AddressSuggestion = {
   place_id: number;
@@ -326,15 +326,8 @@ export const Register = () => {
     <div className="min-h-screen bg-[#e9eff4] py-10 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
       <div className="max-w-5xl w-full bg-white rounded-3xl shadow-xl overflow-hidden grid md:grid-cols-2">
         <div className="bg-gradient-to-b from-[#0d8ec2] to-[#06a8d7] p-12 text-white hidden md:flex md:flex-col md:justify-center">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white/95 shadow-sm">
-              <img
-                src={jcSmartbagLogo}
-                alt="JC SMARTBAG"
-                className="h-full w-full object-contain"
-              />
-            </div>
-            <span className="text-xl font-bold tracking-tight">JC SMARTBAG</span>
+          <div className="inline-block rounded-xl bg-white/95 px-4 py-2.5 shadow-sm mb-6">
+            <Logo size="sm" />
           </div>
           <p className="text-4xl font-semibold leading-tight">Join JC SMARTBAG Today</p>
           <p className="mt-4 text-lg text-white/90">Create your account and start tracking your baggage with confidence.</p>
@@ -343,13 +336,7 @@ export const Register = () => {
         
         <div className="text-center mb-8">
             <div className="flex justify-center md:hidden mb-5">
-              <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-xl bg-white border border-gray-100 shadow-sm">
-                <img
-                  src={jcSmartbagLogo}
-                  alt="JC SMARTBAG"
-                  className="h-full w-full object-contain"
-                />
-              </div>
+              <Logo size="sm" />
             </div>
             <h2 className="text-4xl font-extrabold text-gray-900">Create Account</h2>
             <p className="mt-2 text-sm text-gray-600">

@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import api from '../utils/api';
 import { useAuthStore } from '../store/authStore';
 import { Loader2, Plane, Box } from 'lucide-react';
-import jcSmartbagLogo from '../../image.png';
+import { Logo } from '../components/Logo';
 
 export const Login = () => {
   const [error, setError] = useState('');
@@ -25,7 +25,12 @@ export const Login = () => {
       loginAction(data.user, data.token);
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to login. Please try again.');
+      const resp = err.response?.data;
+      if (resp?.requiresOtp && resp?.email) {
+        navigate(`/verify-email?email=${encodeURIComponent(resp.email)}`);
+        return;
+      }
+      setError(resp?.message || 'Failed to login. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -36,15 +41,8 @@ export const Login = () => {
       <div className="w-full max-w-4xl flex flex-col md:flex-row rounded-2xl shadow-xl overflow-hidden bg-white border border-gray-100/80">
         {/* Branding panel */}
         <div className="md:w-1/2 bg-gradient-to-br from-[#00A8C5] via-[#0088b8] to-[#0066a3] text-white px-8 py-10 md:px-10 md:py-12 flex flex-col md:min-h-[560px]">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-lg bg-white/95">
-              <img
-                src={jcSmartbagLogo}
-                alt="JC Smartbag logo"
-                className="h-full w-full object-contain"
-              />
-            </div>
-            <span className="text-lg font-semibold tracking-tight">JC SMARTBAG</span>
+          <div className="inline-block rounded-xl bg-white/95 px-4 py-2.5 shadow-sm">
+            <Logo size="sm" />
           </div>
 
           <div className="mt-10 md:mt-14">

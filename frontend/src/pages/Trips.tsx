@@ -1,18 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import api from '../utils/api';
-import { Plane, Plus, Loader2, Briefcase, Trash2 } from 'lucide-react';
+import { Plane, Plus, Loader2, Briefcase, Trash2, Cpu } from 'lucide-react';
 import { format } from 'date-fns';
 import { usAirportOptions } from '../data/usData';
 import { AutocompleteInput } from '../components/common/AutocompleteInput';
+import { SubscriptionGate } from '../components/SubscriptionGate';
+
+type AvailableDevice = { id: string; deviceId: string; expiresAt: string };
 
 export const Trips = () => {
     const [trips, setTrips] = useState<any[]>([]);
+    const [devices, setDevices] = useState<AvailableDevice[]>([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
-    const [bagsData, setBagsData] = useState<any[]>([{ tagNumber: '', weight: '', description: '', image: null }]);
+    const [bagsData, setBagsData] = useState<any[]>([{ tagNumber: '', weight: '', description: '', image: null, deviceId: '' }]);
 
     useEffect(() => {
         loadTrips();
+        loadDevices();
     }, []);
 
     const loadTrips = async () => {
@@ -27,8 +32,22 @@ export const Trips = () => {
         }
     };
 
+    const loadDevices = async () => {
+        try {
+            const { data } = await api.get('/devices?available=true');
+            setDevices(data.devices || []);
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const usedDeviceIds = useMemo(
+        () => new Set(bagsData.map((b) => b.deviceId).filter(Boolean)),
+        [bagsData]
+    );
+
     const handleAddBagForm = () => {
-        setBagsData([...bagsData, { tagNumber: '', weight: '', description: '', image: null }]);
+        setBagsData([...bagsData, { tagNumber: '', weight: '', description: '', image: null, deviceId: '' }]);
     };
 
     const handleRemoveBagForm = (index: number) => {
@@ -40,6 +59,12 @@ export const Trips = () => {
     const handleBagChange = (index: number, field: string, value: any) => {
         const newBags = [...bagsData];
         newBags[index][field] = value;
+        if (field === 'deviceId') {
+            newBags[index].tagNumber = value || '';
+        }
+        if (field === 'tagNumber' && newBags[index].deviceId && value !== newBags[index].deviceId) {
+            newBags[index].deviceId = '';
+        }
         setBagsData(newBags);
     };
 
@@ -47,7 +72,7 @@ export const Trips = () => {
         e.preventDefault();
         const formData = new FormData(e.currentTarget);
         const payload = new FormData();
-        
+
         ['flightNumber', 'airlineName', 'departureAirport', 'destinationAirport', 'departureDate', 'departureTime', 'arrivalDate', 'arrivalTime'].forEach(field => {
             payload.append(field, formData.get(field) as string);
         });
@@ -66,8 +91,9 @@ export const Trips = () => {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             setShowModal(false);
-            setBagsData([{ tagNumber: '', weight: '', description: '', image: null }]);
+            setBagsData([{ tagNumber: '', weight: '', description: '', image: null, deviceId: '' }]);
             loadTrips();
+            loadDevices();
         } catch (error: any) {
             console.error('Trip Creation Error:', error.response?.data);
             alert(`Error creating trip: ${error.response?.data?.message || error.message}`);
@@ -75,10 +101,11 @@ export const Trips = () => {
     };
 
     return (
+        <SubscriptionGate feature="Trips">
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold text-gray-900">My Trips</h2>
-                <button 
+                <button
                     onClick={() => setShowModal(true)}
                     className="flex items-center space-x-2 bg-airline-blue text-white px-5 py-2.5 rounded-xl font-medium shadow-sm hover:bg-airline-dark transition-all"
                 >
@@ -100,7 +127,7 @@ export const Trips = () => {
                     {trips.map(trip => (
                         <div key={trip.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-24 h-24 bg-airline-light rounded-bl-full -z-10 opacity-50"></div>
-                            
+
                             <div className="flex justify-between items-start mb-4">
                                 <div>
                                     <span className="text-xs font-bold uppercase tracking-wider text-airline-sky">{trip.airlineName}</span>
@@ -124,9 +151,20 @@ export const Trips = () => {
                                     </p>
                                 </div>
                             </div>
-                            
+
+                            {trip.bags && trip.bags.some((b: any) => b.device) && (
+                                <div className="mt-4 pt-3 border-t border-gray-100 space-y-1">
+                                    {trip.bags.filter((b: any) => b.device).map((b: any) => (
+                                        <div key={b.id} className="flex items-center gap-2 text-xs text-airline-blue font-bold">
+                                            <Cpu size={12}/>
+                                            <span className="font-mono">{b.tagNumber}</span>
+                                            <span className="text-gray-500">tracking device</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
                             <div className="mt-6 pt-4 border-t border-gray-100">
-                                {/* Note: Adding "Add Bag" directly in Trip list per standard UX flow, actual Add Bags During Trip Creation form will be inside modal */}
                                 <button className="w-full py-2 bg-airline-light text-airline-dark font-medium rounded-lg hover:bg-gray-200 transition-colors">
                                     Manage Trip & Bags
                                 </button>
@@ -200,7 +238,7 @@ export const Trips = () => {
                                             <Plus size={16} className="mr-1"/> Add Bag
                                         </button>
                                     </div>
-                                    
+
                                     {bagsData.map((bag, idx) => (
                                         <div key={idx} className="bg-gray-50 border border-gray-200 rounded-xl p-5 relative">
                                             {bagsData.length > 1 && (
@@ -210,9 +248,36 @@ export const Trips = () => {
                                             )}
                                             <h5 className="text-sm font-bold text-gray-500 mb-3">Bag #{idx + 1}</h5>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <div className="md:col-span-2">
+                                                    <label className="block text-xs font-medium text-gray-700">Tracking Device (optional)</label>
+                                                    <select
+                                                        value={bag.deviceId}
+                                                        onChange={(e) => handleBagChange(idx, 'deviceId', e.target.value)}
+                                                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-1.5 px-3 focus:ring-airline-sky sm:text-sm"
+                                                    >
+                                                        <option value="">— No device, type a tag manually —</option>
+                                                        {devices
+                                                            .filter((d) => !usedDeviceIds.has(d.deviceId) || d.deviceId === bag.deviceId)
+                                                            .map((d) => (
+                                                                <option key={d.id} value={d.deviceId}>{d.deviceId}</option>
+                                                            ))}
+                                                    </select>
+                                                </div>
                                                 <div>
                                                     <label className="block text-xs font-medium text-gray-700">Tag Number</label>
-                                                    <input required value={bag.tagNumber} onChange={e => handleBagChange(idx, 'tagNumber', e.target.value)} placeholder="AA-12345" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-1.5 px-3 focus:ring-airline-sky sm:text-sm" />
+                                                    <input
+                                                        required
+                                                        value={bag.tagNumber}
+                                                        onChange={e => handleBagChange(idx, 'tagNumber', e.target.value)}
+                                                        readOnly={Boolean(bag.deviceId)}
+                                                        placeholder="AA-12345"
+                                                        className={`mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-1.5 px-3 focus:ring-airline-sky sm:text-sm font-mono ${bag.deviceId ? 'bg-blue-50' : ''}`}
+                                                    />
+                                                    {bag.deviceId && (
+                                                        <p className="mt-1 text-[11px] text-airline-blue flex items-center gap-1">
+                                                            <Cpu size={11}/> Linked to device
+                                                        </p>
+                                                    )}
                                                 </div>
                                                 <div>
                                                     <label className="block text-xs font-medium text-gray-700">Weight (lbs)</label>
@@ -242,5 +307,6 @@ export const Trips = () => {
                 </div>
             )}
         </div>
+        </SubscriptionGate>
     );
 };
