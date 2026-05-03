@@ -123,49 +123,67 @@ export const Trips = () => {
                     <p className="text-gray-500 mt-2">You haven't added any flights yet.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                     {trips.map(trip => (
-                        <div key={trip.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-24 h-24 bg-airline-light rounded-bl-full -z-10 opacity-50"></div>
-
-                            <div className="flex justify-between items-start mb-4">
-                                <div>
-                                    <span className="text-xs font-bold uppercase tracking-wider text-airline-sky">{trip.airlineName}</span>
-                                    <h3 className="text-2xl font-black text-airline-dark">{trip.flightNumber}</h3>
+                        <div key={trip.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow overflow-hidden flex flex-col">
+                            {/* Boarding-pass header strip */}
+                            <div className="bg-gradient-to-r from-airline-dark to-airline-blue px-5 pt-4 pb-5 text-white">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <p className="text-xs font-semibold text-blue-200 uppercase tracking-widest">{trip.airlineName}</p>
+                                        <h3 className="text-2xl font-black mt-0.5">{trip.flightNumber}</h3>
+                                    </div>
+                                    <span className="bg-white/20 backdrop-blur-sm text-white px-2.5 py-1 rounded-full text-xs font-bold">
+                                        {trip.bags?.length || 0} {trip.bags?.length === 1 ? 'Bag' : 'Bags'}
+                                    </span>
                                 </div>
-                                <div className="bg-blue-50 text-airline-blue px-3 py-1 rounded-full text-xs font-bold">
-                                    {trip.bags?.length || 0} Bags
+
+                                {/* Route row */}
+                                <div className="flex items-center justify-between mt-4">
+                                    <div>
+                                        <p className="text-2xl font-black tracking-tight">{trip.departureAirport?.split(' ')[0]}</p>
+                                        <p className="text-xs text-blue-200 mt-0.5">{format(new Date(trip.departureDateTime), 'MMM d, HH:mm')}</p>
+                                    </div>
+                                    <div className="flex-1 mx-3 flex items-center gap-1">
+                                        <div className="flex-1 h-px bg-white/30" />
+                                        <Plane className="text-white/70 rotate-0" size={18} />
+                                        <div className="flex-1 h-px bg-white/30" />
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-2xl font-black tracking-tight">{trip.destinationAirport?.split(' ')[0]}</p>
+                                        <p className="text-xs text-blue-200 mt-0.5">
+                                            {trip.arrivalDateTime ? format(new Date(trip.arrivalDateTime), 'MMM d, HH:mm') : '—'}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="flex items-center justify-between mt-6 text-gray-700">
-                                <div className="text-center">
-                                    <p className="text-xl font-bold">{trip.departureAirport}</p>
-                                    <p className="text-xs text-gray-500">{format(new Date(trip.departureDateTime), 'MMM d, HH:mm')}</p>
-                                </div>
-                                <Plane className="text-gray-300 mx-4" size={24} />
-                                <div className="text-center">
-                                    <p className="text-xl font-bold">{trip.destinationAirport}</p>
-                                    <p className="text-xs text-gray-500">
-                                      {trip.arrivalDateTime ? format(new Date(trip.arrivalDateTime), 'MMM d, HH:mm') : '-'}
-                                    </p>
-                                </div>
+                            {/* Tear-line notch effect */}
+                            <div className="flex items-center -mt-1">
+                                <div className="w-4 h-4 rounded-full bg-airline-light -ml-2 flex-shrink-0" />
+                                <div className="flex-1 border-t-2 border-dashed border-gray-200 mx-1" />
+                                <div className="w-4 h-4 rounded-full bg-airline-light -mr-2 flex-shrink-0" />
                             </div>
 
-                            {trip.bags && trip.bags.some((b: any) => b.device) && (
-                                <div className="mt-4 pt-3 border-t border-gray-100 space-y-1">
-                                    {trip.bags.filter((b: any) => b.device).map((b: any) => (
-                                        <div key={b.id} className="flex items-center gap-2 text-xs text-airline-blue font-bold">
-                                            <Cpu size={12}/>
-                                            <span className="font-mono">{b.tagNumber}</span>
-                                            <span className="text-gray-500">tracking device</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                            {/* Bag / device info */}
+                            <div className="px-5 py-4 flex-1">
+                                {trip.bags && trip.bags.some((b: any) => b.device) ? (
+                                    <div className="space-y-1.5">
+                                        {trip.bags.filter((b: any) => b.device).map((b: any) => (
+                                            <div key={b.id} className="flex items-center gap-2 text-xs text-airline-blue font-semibold bg-blue-50 rounded-lg px-3 py-1.5">
+                                                <Cpu size={12} />
+                                                <span className="font-mono">{b.tagNumber}</span>
+                                                <span className="text-blue-400">· tracking active</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-xs text-gray-400 italic">No tracking device linked</p>
+                                )}
+                            </div>
 
-                            <div className="mt-6 pt-4 border-t border-gray-100">
-                                <button className="w-full py-2 bg-airline-light text-airline-dark font-medium rounded-lg hover:bg-gray-200 transition-colors">
+                            <div className="px-5 pb-5">
+                                <button className="w-full py-2.5 bg-airline-light text-airline-dark text-sm font-semibold rounded-xl hover:bg-gray-200 transition-colors">
                                     Manage Trip & Bags
                                 </button>
                             </div>
@@ -176,15 +194,15 @@ export const Trips = () => {
 
             {/* Create Trip Modal */}
             {showModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden">
-                        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+                    <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-2xl overflow-hidden">
+                        <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
                             <h3 className="text-lg font-bold text-gray-900">Register New Trip</h3>
-                            <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">&times;</button>
+                            <button onClick={() => setShowModal(false)} className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-200 text-xl leading-none">&times;</button>
                         </div>
-                        <div className="p-6 max-h-[80vh] overflow-y-auto">
+                        <div className="p-5 max-h-[85vh] overflow-y-auto">
                             <form onSubmit={handleCreateTrip} className="space-y-6">
-                                <div className="grid grid-cols-2 gap-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700">Flight Number</label>
                                         <input name="flightNumber" required placeholder="e.g. AA123" className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:ring-airline-sky focus:border-airline-sky sm:text-sm" />

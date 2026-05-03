@@ -84,52 +84,72 @@ export const MyDevices = () => {
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {devices.map((d) => {
             const expired = d.status !== 'ACTIVE';
             return (
               <div
                 key={d.id}
-                className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex flex-col gap-3"
+                className={`bg-white rounded-2xl shadow-sm border overflow-hidden flex flex-col hover:shadow-md transition-shadow ${
+                  expired ? 'border-gray-200 opacity-75' : 'border-gray-100'
+                }`}
               >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-xs uppercase tracking-wider text-gray-500">Device</p>
-                    <h4 className="font-mono text-lg font-bold text-airline-dark">{d.deviceId}</h4>
+                {/* Top accent bar */}
+                <div className={`h-1.5 w-full ${expired ? 'bg-gray-300' : d.available ? 'bg-gradient-to-r from-emerald-400 to-teal-400' : 'bg-gradient-to-r from-blue-400 to-blue-600'}`} />
+
+                <div className="p-5 flex-1 flex flex-col gap-3">
+                  {/* Header */}
+                  <div className="flex justify-between items-start gap-2">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-widest text-gray-400 font-semibold">Device ID</p>
+                      <h4 className="font-mono text-base font-bold text-airline-dark mt-0.5 break-all">{d.deviceId}</h4>
+                    </div>
+                    {expired ? (
+                      <span className="flex-shrink-0 px-2.5 py-1 text-xs rounded-full bg-gray-100 text-gray-500 font-semibold">Expired</span>
+                    ) : d.available ? (
+                      <span className="flex-shrink-0 px-2.5 py-1 text-xs rounded-full bg-emerald-50 text-emerald-700 font-bold flex items-center gap-1">
+                        <BadgeCheck size={13} /> Available
+                      </span>
+                    ) : (
+                      <span className="flex-shrink-0 px-2.5 py-1 text-xs rounded-full bg-blue-50 text-airline-blue font-bold">In use</span>
+                    )}
                   </div>
-                  {expired ? (
-                    <span className="px-2 py-0.5 text-xs rounded-full bg-gray-200 text-gray-700">EXPIRED</span>
-                  ) : d.available ? (
-                    <span className="px-2 py-0.5 text-xs rounded-full bg-green-100 text-green-700 font-bold flex items-center gap-1">
-                      <BadgeCheck size={14} /> Available
-                    </span>
-                  ) : (
-                    <span className="px-2 py-0.5 text-xs rounded-full bg-blue-50 text-airline-blue font-bold">In use</span>
-                  )}
+
+                  {/* Details */}
+                  <div className="text-xs text-gray-500 space-y-1.5 bg-gray-50 rounded-xl p-3">
+                    <div className="flex justify-between">
+                      <span>Purchased</span>
+                      <span className="font-semibold text-gray-700">{format(new Date(d.purchasedAt), 'MMM d, yyyy')}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Hw. expires</span>
+                      <span className="font-semibold text-gray-700">{format(new Date(d.expiresAt), 'MMM d, yyyy')}</span>
+                    </div>
+                    {d.attachedTo && (
+                      <div className="flex justify-between pt-1 border-t border-gray-200 mt-1">
+                        <span>Flight</span>
+                        <span className="font-bold text-airline-blue">{d.attachedTo.tripFlight}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* CTA */}
+                  {d.attachedTo ? (
+                    <Link
+                      to={`/tracking?bagId=${d.attachedTo.bagId}`}
+                      className="mt-auto text-center text-sm font-bold text-white bg-airline-blue py-2.5 rounded-xl hover:bg-airline-dark transition-colors"
+                    >
+                      View Tracking →
+                    </Link>
+                  ) : !expired ? (
+                    <Link
+                      to="/trips"
+                      className="mt-auto text-center text-sm font-semibold text-airline-blue bg-blue-50 py-2.5 rounded-xl hover:bg-blue-100 transition-colors"
+                    >
+                      Assign to a Trip
+                    </Link>
+                  ) : null}
                 </div>
-                <div className="text-sm text-gray-600 space-y-1">
-                  <p>
-                    Purchased: <span className="font-medium">{format(new Date(d.purchasedAt), 'MMM d, yyyy')}</span>
-                  </p>
-                  <p>
-                    Hardware expires:{' '}
-                    <span className="font-medium">{format(new Date(d.expiresAt), 'MMM d, yyyy')}</span>
-                  </p>
-                  {d.attachedTo && (
-                    <p>
-                      Attached to flight <span className="font-bold">{d.attachedTo.tripFlight}</span> as bag{' '}
-                      <span className="font-mono">{d.attachedTo.tagNumber}</span>
-                    </p>
-                  )}
-                </div>
-                {d.attachedTo && (
-                  <Link
-                    to={`/tracking?bagId=${d.attachedTo.bagId}`}
-                    className="text-sm font-bold text-airline-sky hover:text-airline-blue"
-                  >
-                    View tracking →
-                  </Link>
-                )}
               </div>
             );
           })}

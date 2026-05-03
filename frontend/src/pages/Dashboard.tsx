@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
-import { Plane, Briefcase, MapPin, Bell, Clock, Lock } from 'lucide-react';
+import { Plane, Briefcase, MapPin, History, Clock, Lock, ArrowRight, ShoppingBag, Map } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import api from '../utils/api';
 import { useSubscriptionStatus } from '../hooks/useSubscriptionStatus';
@@ -16,104 +16,159 @@ export const Dashboard = () => {
       try {
         const [tripsRes, bagsRes] = await Promise.all([
           api.get('/trips'),
-          api.get('/bags')
+          api.get('/bags'),
         ]);
-        
         setStats({
           upcomingTrips: tripsRes.data.trips.length,
           totalBags: bagsRes.data.bags.length,
           activeTracking: bagsRes.data.bags.filter((b: any) => b.trackingLogs?.length > 0).length,
-          totalTrips: tripsRes.data.trips.length
+          totalTrips: tripsRes.data.trips.length,
         });
       } catch (err) {
-        console.error("Failed to load dashboard stats", err);
+        console.error('Failed to load dashboard stats', err);
       }
     };
     fetchStats();
   }, []);
 
   const statCards = [
-    { title: 'Upcoming Trips', value: stats.upcomingTrips, icon: <Plane size={24}/>, iconColor: 'bg-white text-blue-600', bgColor: 'bg-gradient-to-br from-blue-500 to-blue-600 text-white border-blue-600' },
-    { title: 'Registered Bags', value: stats.totalBags, icon: <Briefcase size={24}/>, iconColor: 'bg-white text-emerald-600', bgColor: 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-emerald-600' },
-    { title: 'Active Trackings', value: stats.activeTracking, icon: <MapPin size={24}/>, iconColor: 'bg-white text-purple-600', bgColor: 'bg-gradient-to-br from-purple-500 to-purple-600 text-white border-purple-600' },
-    { title: 'Total Trips', value: stats.totalTrips, icon: <Bell size={24}/>, iconColor: 'bg-white text-orange-600', bgColor: 'bg-gradient-to-br from-orange-500 to-orange-600 text-white border-orange-600' }
+    {
+      title: 'Upcoming Trips',
+      value: stats.upcomingTrips,
+      icon: <Plane size={22} />,
+      accent: 'from-blue-500 to-blue-600',
+      iconBg: 'bg-blue-100 text-blue-600',
+      border: 'border-blue-100',
+    },
+    {
+      title: 'Registered Bags',
+      value: stats.totalBags,
+      icon: <Briefcase size={22} />,
+      accent: 'from-emerald-500 to-teal-500',
+      iconBg: 'bg-emerald-100 text-emerald-600',
+      border: 'border-emerald-100',
+    },
+    {
+      title: 'Active Trackings',
+      value: stats.activeTracking,
+      icon: <MapPin size={22} />,
+      accent: 'from-violet-500 to-purple-600',
+      iconBg: 'bg-violet-100 text-violet-600',
+      border: 'border-violet-100',
+    },
+    {
+      title: 'Total Trips',
+      value: stats.totalTrips,
+      icon: <History size={22} />,
+      accent: 'from-orange-400 to-orange-500',
+      iconBg: 'bg-orange-100 text-orange-600',
+      border: 'border-orange-100',
+    },
+  ];
+
+  const quickActions = [
+    { label: 'Book New Trip',   to: '/trips',        icon: <Plane size={18} />,       color: 'bg-blue-50 text-blue-700 hover:bg-blue-100' },
+    { label: 'Add Baggage',     to: '/bags',         icon: <Briefcase size={18} />,   color: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' },
+    { label: 'Live Tracking',   to: '/tracking',     icon: <Map size={18} />,         color: 'bg-violet-50 text-violet-700 hover:bg-violet-100' },
+    { label: 'Buy Device',      to: '/devices',      icon: <ShoppingBag size={18} />, color: 'bg-orange-50 text-orange-700 hover:bg-orange-100' },
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 md:space-y-8">
+      {/* Header */}
       <div>
-        <h2 className="text-3xl font-bold text-gray-900">Welcome {user?.fullName}!</h2>
-        <p className="text-gray-500 mt-2 text-lg">Here is your baggage tracking overview.</p>
+        <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
+          Welcome, {user?.fullName?.split(' ')[0]}! 👋
+        </h2>
+        <p className="text-gray-500 mt-1 text-sm md:text-base">Here's your baggage tracking overview.</p>
       </div>
 
+      {/* Subscription alerts */}
       {subStatus && !subStatus.active && subStatus.hasDevice && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-800 flex items-start gap-3">
-          <Lock className="mt-0.5" size={18} />
-          <div className="flex-1">
-            <strong>Your device subscription has expired.</strong> Adding trips, bags, and live tracking are paused.
-            Renew your subscription to restore access.
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-800 flex flex-wrap items-start gap-3">
+          <Lock className="mt-0.5 flex-shrink-0" size={18} />
+          <div className="flex-1 min-w-0">
+            <strong>Your device subscription has expired.</strong> Trips, bags, and live tracking are paused.
           </div>
-          <div className="flex gap-2 shrink-0">
-            <Link to="/subscription" className="font-bold text-red-700 hover:underline whitespace-nowrap">Renew</Link>
-          </div>
+          <Link to="/subscription" className="font-bold text-red-700 hover:underline whitespace-nowrap flex items-center gap-1">
+            Renew <ArrowRight size={14} />
+          </Link>
         </div>
       )}
 
       {subStatus && !subStatus.active && !subStatus.hasDevice && (
-        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800 flex items-start gap-3">
-          <Clock className="mt-0.5" size={18} />
-          <div className="flex-1">
-            <strong>Get started with JC Smartbag.</strong> Purchase a tracking device to unlock trips, bag management, and live tracking — every device includes <strong>1 month free</strong>.
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800 flex flex-wrap items-start gap-3">
+          <Clock className="mt-0.5 flex-shrink-0" size={18} />
+          <div className="flex-1 min-w-0">
+            <strong>Get started with JC Smartbag.</strong> Every device includes <strong>1 month free</strong> premium.
           </div>
-          <div className="flex gap-2 shrink-0">
-            <Link to="/devices" className="font-bold text-airline-blue hover:underline whitespace-nowrap">Buy Device</Link>
-          </div>
+          <Link to="/devices" className="font-bold text-airline-blue hover:underline whitespace-nowrap flex items-center gap-1">
+            Buy Device <ArrowRight size={14} />
+          </Link>
         </div>
       )}
 
       {subStatus?.active && subStatus.devices.some(d => d.subPlan === 'DEVICE_BONUS' && d.subStatus === 'ACTIVE') && subStatus.expiryDate && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800 flex items-start gap-3">
-          <Clock className="mt-0.5" size={18} />
-          <div className="flex-1">
-            You're on the <strong>1-month free trial</strong> from your device purchase. It expires on{' '}
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800 flex flex-wrap items-start gap-3">
+          <Clock className="mt-0.5 flex-shrink-0" size={18} />
+          <div className="flex-1 min-w-0">
+            <strong>Free trial active</strong> — expires{' '}
             <strong>{format(new Date(subStatus.expiryDate), 'MMM d, yyyy')}</strong>{' '}
             ({formatDistanceToNow(new Date(subStatus.expiryDate), { addSuffix: true })}).
           </div>
-          <Link to="/subscription" className="font-bold text-airline-blue hover:underline whitespace-nowrap">Subscribe</Link>
+          <Link to="/subscription" className="font-bold text-airline-blue hover:underline whitespace-nowrap flex items-center gap-1">
+            Subscribe <ArrowRight size={14} />
+          </Link>
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {statCards.map((stat, idx) => (
-          <div key={idx} className={`rounded-2xl p-6 shadow-sm border hover:shadow-lg transition-all transform hover:-translate-y-1 ${stat.bgColor}`}>
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 shadow-sm ${stat.iconColor}`}>
-              {stat.icon}
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-5">
+        {statCards.map((s, i) => (
+          <div
+            key={i}
+            className={`relative bg-white rounded-2xl border ${s.border} shadow-sm p-4 md:p-5 overflow-hidden hover:shadow-md transition-all`}
+          >
+            {/* Top gradient stripe */}
+            <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${s.accent} rounded-t-2xl`} />
+            <div className={`w-9 h-9 md:w-11 md:h-11 rounded-xl flex items-center justify-center mb-3 ${s.iconBg}`}>
+              {s.icon}
             </div>
-            <h3 className="text-white/90 text-sm font-medium">{stat.title}</h3>
-            <p className="text-3xl font-bold text-white mt-1">{stat.value}</p>
+            <p className="text-gray-500 text-xs md:text-sm font-medium">{s.title}</p>
+            <p className="text-2xl md:text-3xl font-black text-gray-900 mt-0.5">{s.value}</p>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
-        {/* Mockup for upcoming trips or latest tracking */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-           <h3 className="text-xl font-bold text-gray-900 mb-4 tracking-tight">Latest Tracking Updates</h3>
-           <div className="text-gray-500 text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-              No recent tracking updates available. Add a bag to get started!
-           </div>
+      {/* Bottom grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 md:gap-8">
+        {/* Latest tracking */}
+        <div className="bg-white rounded-2xl p-5 md:p-6 shadow-sm border border-gray-100">
+          <h3 className="text-base md:text-lg font-bold text-gray-900 mb-4">Latest Tracking Updates</h3>
+          <div className="flex flex-col items-center justify-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-200 text-center gap-2">
+            <MapPin className="text-gray-300" size={32} />
+            <p className="text-gray-500 text-sm">No recent tracking updates.</p>
+            <Link to="/bags" className="text-xs font-semibold text-airline-blue hover:underline mt-1">
+              Add a bag to get started →
+            </Link>
+          </div>
         </div>
 
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-           <h3 className="text-xl font-bold text-gray-900 mb-4 tracking-tight">Quick Actions</h3>
-           <div className="grid grid-cols-2 gap-4">
-                <Link to="/trips" className="p-4 bg-airline-light rounded-xl text-airline-dark font-medium hover:bg-airline-sky hover:text-white transition-colors text-center shadow-sm block">
-                    Book New Trip
-                </Link>
-                <Link to="/bags" className="p-4 bg-airline-light rounded-xl text-airline-dark font-medium hover:bg-airline-sky hover:text-white transition-colors text-center shadow-sm block">
-                    Add Baggage
-                </Link>
-           </div>
+        {/* Quick actions */}
+        <div className="bg-white rounded-2xl p-5 md:p-6 shadow-sm border border-gray-100">
+          <h3 className="text-base md:text-lg font-bold text-gray-900 mb-4">Quick Actions</h3>
+          <div className="grid grid-cols-2 gap-3">
+            {quickActions.map((a) => (
+              <Link
+                key={a.to}
+                to={a.to}
+                className={`flex items-center gap-2.5 px-4 py-3.5 rounded-xl font-semibold text-sm transition-colors ${a.color}`}
+              >
+                {a.icon}
+                {a.label}
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
     </div>
