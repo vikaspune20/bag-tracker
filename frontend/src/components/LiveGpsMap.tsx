@@ -63,7 +63,8 @@ export function LiveGpsMap({ bagId, deviceId, refreshInterval = 30_000 }: Props)
     if (!silent) setRefreshing(true);
     try {
       const token = localStorage.getItem('token');
-      const r = await fetch(`/api/tracking/${bagId}`, {
+      const base = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
+      const r = await fetch(`${base}/tracking/${bagId}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
