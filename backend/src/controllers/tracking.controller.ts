@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import prisma from '../utils/prisma';
-import { sendTrackingUpdateEmail } from '../utils/email';
+import { sendTrackingUpdateEmail, sendMobileTrackerLinkEmail } from '../utils/email';
 
 export const addTrackingEvent = async (req: AuthRequest, res: Response) => {
   try {
@@ -169,6 +169,40 @@ export const getLatestGps = async (req: Request, res: Response) => {
     return res.status(200).json({ position: latest });
   } catch (error: any) {
     return res.status(500).json({ message: 'Error fetching GPS', error: error.message });
+  }
+};
+
+export const sendMobileLink = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+    const { bagId, email } = req.body;
+    if (!bagId || !email) return res.status(400).json({ message: 'bagId and email required' });
+
+    const bag = await prisma.bag.findUnique({
+      where: { id: bagId },
+      include: { trip: { select: { userId: true } } },
+    });
+    if (!bag) return res.status(404).json({ message: 'Bag not found' });
+    if (bag.trip.userId !== req.user.id && req.user.role !== 'ADMIN') {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+
+    const sender = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { fullName: true },
+    });
+
+    const appUrl = process.env.APP_URL || 'http://jcsmartbag.com';
+    const mobileUrl = `${appUrl}/mobile-tracker?deviceId=${encodeURIComponent(bag.tagNumber)}`;
+
+    await sendMobileTrackerLinkEmail(email, sender?.fullName ?? 'User', {
+      tagNumber: bag.tagNumber,
+      mobileUrl,
+    });
+
+    return res.json({ message: `Mobile tracker link sent to ${email}` });
+  } catch (error: any) {
+    return res.status(500).json({ message: 'Error sending link', error: error.message });
   }
 };
 

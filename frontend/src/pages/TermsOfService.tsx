@@ -81,7 +81,7 @@ export const TermsOfService = () => {
                 <p className="mt-3 text-landing-muted">
                   You can cancel your subscription at any time. Cancellation stops future renewals and will
                   generally take effect at the end of the current billing period. To request help with cancellation,
-                  contact <a className="text-cyan-700 hover:underline" href="mailto:support@jcsmartbag.com">support@jcsmartbag.com</a>.
+                  contact <a className="text-cyan-700 hover:underline" href="mailto:service@jcsmartbag.com">service@jcsmartbag.com</a>.
                 </p>
               </section>
 
@@ -115,8 +115,8 @@ export const TermsOfService = () => {
                 <h2 className="font-display text-xl font-semibold text-landing-text">9. Contact</h2>
                 <p className="mt-3 text-landing-muted">
                   Questions about these Terms? Email{' '}
-                  <a className="text-cyan-700 hover:underline" href="mailto:support@jcsmartbag.com">
-                    support@jcsmartbag.com
+                  <a className="text-cyan-700 hover:underline" href="mailto:service@jcsmartbag.com">
+                    service@jcsmartbag.com
                   </a>{' '}
                   or use our <Link to="/contact" className="text-cyan-700 hover:underline">contact form</Link>.
                 </p>

@@ -1,10 +1,11 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import api from '../utils/api';
-import { Loader2, CheckCircle2, Plane, Navigation, PackageCheck, MapPin, Briefcase, Cpu, ArrowLeft } from 'lucide-react';
+import { Loader2, CheckCircle2, Plane, Navigation, PackageCheck, MapPin, Briefcase, Cpu, ArrowLeft, Smartphone, Send, X, CheckCircle } from 'lucide-react';
 import { LiveGpsMap } from '../components/LiveGpsMap';
 import { format } from 'date-fns';
 import { SubscriptionGate } from '../components/SubscriptionGate';
+import { useAuthStore } from '../store/authStore';
 
 const stageIcons: Record<string, JSX.Element> = {
     'Checked-in':       <CheckCircle2 size={22} className="text-blue-500" />,
@@ -34,6 +35,35 @@ const TrackingInner = () => {
     const [bagInfo, setBagInfo] = useState<any>(null);
     const [bags, setBags] = useState<any[]>([]);
     const [bagsLoading, setBagsLoading] = useState(false);
+
+    // Mobile link modal
+    const user = useAuthStore(s => s.user);
+    const [showLinkModal, setShowLinkModal] = useState(false);
+    const [linkEmail, setLinkEmail] = useState('');
+    const [linkSending, setLinkSending] = useState(false);
+    const [linkSent, setLinkSent] = useState(false);
+    const [linkError, setLinkError] = useState('');
+
+    const handleSendLink = async () => {
+        if (!bagId || !linkEmail.trim()) return;
+        setLinkSending(true);
+        setLinkError('');
+        try {
+            await api.post('/tracking/send-mobile-link', { bagId, email: linkEmail.trim() });
+            setLinkSent(true);
+        } catch (e: any) {
+            setLinkError(e.response?.data?.message || 'Failed to send');
+        } finally {
+            setLinkSending(false);
+        }
+    };
+
+    const openLinkModal = () => {
+        setLinkEmail(user?.email ?? '');
+        setLinkSent(false);
+        setLinkError('');
+        setShowLinkModal(true);
+    };
 
     useEffect(() => { if (bagId) loadTracking(); }, [bagId]);
     useEffect(() => { if (!bagId) loadActiveBags(); }, [bagId]);
@@ -181,9 +211,17 @@ const TrackingInner = () => {
                 >
                     <ArrowLeft size={16} /> Active Bags
                 </Link>
-                <Link to="/bags" className="text-xs font-semibold text-gray-400 hover:text-gray-600">
-                    Manage Bags
-                </Link>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={openLinkModal}
+                        className="flex items-center gap-1.5 text-xs font-semibold text-white bg-airline-blue hover:bg-airline-dark px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                        <Smartphone size={13} /> Send to Phone
+                    </button>
+                    <Link to="/bags" className="text-xs font-semibold text-gray-400 hover:text-gray-600">
+                        Manage Bags
+                    </Link>
+                </div>
             </div>
 
             {/* Bag info card */}
@@ -268,6 +306,74 @@ const TrackingInner = () => {
                     )}
                 </div>
             </div>
+
+            {/* Send to Phone modal */}
+            {showLinkModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowLinkModal(false)} />
+                    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 space-y-4">
+                        {/* Header */}
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <div className="w-9 h-9 rounded-xl bg-airline-blue/10 flex items-center justify-center">
+                                    <Smartphone size={18} className="text-airline-blue" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-gray-900 text-sm">Send to Phone</h3>
+                                    <p className="text-xs text-gray-400">GPS tracker link via email</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setShowLinkModal(false)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">
+                                <X size={16} />
+                            </button>
+                        </div>
+
+                        {/* Device tag */}
+                        <div className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-100">
+                            <p className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold mb-0.5">Bag Tag</p>
+                            <p className="font-mono font-bold text-airline-dark">{bagInfo?.tagNumber}</p>
+                        </div>
+
+                        {linkSent ? (
+                            <div className="flex flex-col items-center gap-2 py-4 text-center">
+                                <CheckCircle size={36} className="text-emerald-500" />
+                                <p className="font-semibold text-gray-800">Link sent!</p>
+                                <p className="text-xs text-gray-500">Check <strong>{linkEmail}</strong> and open it on your phone.</p>
+                                <button onClick={() => setShowLinkModal(false)} className="mt-2 text-xs font-semibold text-airline-blue hover:underline">Close</button>
+                            </div>
+                        ) : (
+                            <>
+                                <div>
+                                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1.5">Send to email</label>
+                                    <input
+                                        type="email"
+                                        value={linkEmail}
+                                        onChange={e => setLinkEmail(e.target.value)}
+                                        placeholder="your@email.com"
+                                        className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-airline-blue"
+                                    />
+                                </div>
+
+                                {linkError && (
+                                    <p className="text-xs text-red-500 bg-red-50 px-3 py-2 rounded-lg">{linkError}</p>
+                                )}
+
+                                <button
+                                    onClick={handleSendLink}
+                                    disabled={!linkEmail.trim() || linkSending}
+                                    className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-airline-blue text-white font-bold text-sm hover:bg-airline-dark transition-colors disabled:opacity-50"
+                                >
+                                    {linkSending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                                    {linkSending ? 'Sending…' : 'Send Link'}
+                                </button>
+                                <p className="text-[11px] text-gray-400 text-center">
+                                    The recipient will get a link to open the GPS tracker on their phone.
+                                </p>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

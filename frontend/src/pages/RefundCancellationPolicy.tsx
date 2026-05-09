@@ -42,8 +42,8 @@ export const RefundCancellationPolicy = () => {
                 </p>
                 <p className="mt-3 text-landing-muted">
                   If you need help cancelling, contact{' '}
-                  <a className="text-cyan-700 hover:underline" href="mailto:support@jcsmartbag.com">
-                    support@jcsmartbag.com
+                  <a className="text-cyan-700 hover:underline" href="mailto:service@jcsmartbag.com">
+                    service@jcsmartbag.com
                   </a>{' '}
                   or use our <Link to="/contact" className="text-cyan-700 hover:underline">contact form</Link>.
                 </p>

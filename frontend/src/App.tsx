@@ -41,6 +41,7 @@ import { AdminSubscriptions } from './pages/admin/AdminSubscriptions';
 import { AdminEnquiries } from './pages/admin/AdminEnquiries';
 import { AdminTracking } from './pages/admin/AdminTracking';
 import { AdminDataPurge } from './pages/admin/AdminDataPurge';
+import { AdminPricing } from './pages/admin/AdminPricing';
 
 const App = () => {
   const checkAuth = useAuthStore(state => state.checkAuth);
@@ -96,6 +97,7 @@ const App = () => {
           <Route path="/admin/orders" element={<AdminOrders />} />
           <Route path="/admin/subscriptions" element={<AdminSubscriptions />} />
           <Route path="/admin/enquiries" element={<AdminEnquiries />} />
+          <Route path="/admin/pricing" element={<AdminPricing />} />
           <Route path="/admin/tracking" element={<AdminTracking />} />
           <Route path="/admin/purge" element={<AdminDataPurge />} />
         </Route>

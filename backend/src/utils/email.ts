@@ -79,7 +79,7 @@ function shell(content: string) {
   </table></body></html>`;
 }
 
-const APP_URL = () => process.env.APP_URL || 'http://localhost:5173';
+const APP_URL = () => process.env.APP_URL || 'http://jcsmartbag.com';
 
 export function sendOtpEmail(to: string, fullName: string, otp: string) {
   const html = shell(`
@@ -241,6 +241,28 @@ export function sendDeviceSubConfirmationEmail(
     <p>Need help? Reply to this email and we'll get back to you.</p>
   `);
   return send(to, `Subscription confirmed — ${subs.length} device${subs.length > 1 ? 's' : ''}`, html);
+}
+
+export function sendMobileTrackerLinkEmail(
+  to: string,
+  fullName: string,
+  args: { tagNumber: string; mobileUrl: string }
+) {
+  const { tagNumber, mobileUrl } = args;
+  const html = shell(`
+    <p>Hi ${escapeHtml(fullName)},</p>
+    <p>Open the link below on your phone to start GPS tracking for bag <strong>${escapeHtml(tagNumber)}</strong>.</p>
+    <p style="margin:24px 0;text-align:center;">
+      <a href="${escapeHtml(mobileUrl)}"
+         style="display:inline-block;background:#0b1f3a;color:#ffffff;text-decoration:none;
+                padding:14px 32px;border-radius:10px;font-weight:700;font-size:15px;letter-spacing:.02em;">
+        Open Mobile Tracker
+      </a>
+    </p>
+    <p style="font-size:13px;color:#6b7280;word-break:break-all;">Or copy this link: ${escapeHtml(mobileUrl)}</p>
+    <p style="font-size:13px;color:#6b7280;">Keep the page open while tracking. GPS location will be sent every 30 seconds.</p>
+  `);
+  return send(to, `JC Smartbag — Mobile GPS Tracker for ${tagNumber}`, html);
 }
 
 export async function sendTestEmail(to: string) {

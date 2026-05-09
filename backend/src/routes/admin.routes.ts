@@ -7,6 +7,7 @@ import {
   getAdminUserDetail,
   updateUserRole,
   purgeUserDataEndpoint,
+  deleteUserAccount,
   getUserDataCounts,
   getAdminDevices,
   activateDevice,
@@ -20,6 +21,8 @@ import {
   adminAddTracking,
   adminSearchBag,
   broadcastNotification,
+  getPricing,
+  updatePricing,
 } from '../controllers/admin.controller';
 
 const router = Router();
@@ -36,6 +39,7 @@ router.get('/users/:id', getAdminUserDetail);
 router.put('/users/:id/role', updateUserRole);
 router.get('/users/:id/data-counts', getUserDataCounts);
 router.delete('/users/:id/data', purgeUserDataEndpoint);
+router.delete('/users/:id', deleteUserAccount);
 
 // Devices
 router.get('/devices', getAdminDevices);
@@ -60,5 +64,9 @@ router.get('/tracking/bag', adminSearchBag);
 
 // Notifications
 router.post('/notifications/broadcast', broadcastNotification);
+
+// Pricing
+router.get('/pricing', getPricing);
+router.put('/pricing', updatePricing);
 
 export default router;

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { ChevronLeft, Loader2, Shield, Trash2, AlertTriangle } from 'lucide-react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { ChevronLeft, Loader2, Shield, Trash2, AlertTriangle, UserX } from 'lucide-react';
 import api from '../../utils/api';
 
 interface UserDetail {
@@ -26,6 +26,7 @@ type Tab = 'profile' | 'trips' | 'devices' | 'subscriptions';
 
 export function AdminUserDetail() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [user, setUser] = useState<UserDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<Tab>('profile');
@@ -34,6 +35,8 @@ export function AdminUserDetail() {
   const [purging, setPurging] = useState(false);
   const [purgeResult, setPurgeResult] = useState<string | null>(null);
   const [dataCounts, setDataCounts] = useState<Record<string, number> | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -65,6 +68,19 @@ export function AdminUserDetail() {
       alert(e.response?.data?.message || 'Failed to update role');
     } finally {
       setRoleChanging(false);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!user || deleteConfirm !== user.email) return;
+    setDeleting(true);
+    try {
+      await api.delete(`/admin/users/${user.id}`);
+      navigate('/admin/users');
+    } catch (e: any) {
+      alert(e.response?.data?.message || 'Delete failed');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -316,6 +332,33 @@ export function AdminUserDetail() {
             </button>
           </div>
           <p className="text-slate-500 text-xs mt-1.5">User account is preserved. Only data is deleted.</p>
+        </div>
+
+        {/* Delete account */}
+        <div className="border-t border-red-500/20 pt-4">
+          <div className="flex items-center gap-2 mb-2">
+            <UserX size={14} className="text-red-500" />
+            <p className="text-red-400 text-xs font-semibold">Delete Account Permanently</p>
+          </div>
+          <p className="text-slate-400 text-xs mb-2">
+            Type <span className="text-red-400 font-mono">{user.email}</span> to permanently delete this account and all its data. This cannot be undone.
+          </p>
+          <div className="flex gap-2">
+            <input
+              value={deleteConfirm}
+              onChange={e => setDeleteConfirm(e.target.value)}
+              placeholder={user.email}
+              className="flex-1 bg-slate-900 border border-red-500/50 text-white text-sm px-3 py-2 rounded-lg focus:outline-none focus:border-red-500"
+            />
+            <button
+              onClick={handleDeleteUser}
+              disabled={deleteConfirm !== user.email || deleting}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-800 hover:bg-red-900 text-white text-sm font-medium transition-colors disabled:opacity-40"
+            >
+              <UserX size={15} />
+              {deleting ? 'Deleting…' : 'Delete User'}
+            </button>
+          </div>
         </div>
       </div>
     </div>

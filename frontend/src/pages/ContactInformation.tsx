@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { LandingNav } from '../components/landing/LandingNav';
 import { ScrollReveal } from '../components/landing/ScrollReveal';
 
-const SUPPORT_EMAIL = 'support@jcsmartbag.com';
+const SUPPORT_EMAIL = 'service@jcsmartbag.com';
 
 export const ContactInformation = () => {
   return (

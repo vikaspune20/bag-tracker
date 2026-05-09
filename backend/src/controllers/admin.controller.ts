@@ -148,6 +148,25 @@ export const purgeUserDataEndpoint = async (req: AuthRequest, res: Response) => 
   }
 };
 
+export const deleteUserAccount = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    if (id === req.user?.id) {
+      return res.status(400).json({ message: 'You cannot delete your own account.' });
+    }
+    const user = await prisma.user.findUnique({ where: { id }, select: { id: true, email: true } });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Purge all related data first, then delete the user row
+    const deleted = await purgeUserData(id);
+    await prisma.user.delete({ where: { id } });
+
+    return res.json({ message: `User ${user.email} deleted permanently.`, deleted });
+  } catch (error: any) {
+    return res.status(500).json({ message: 'Error deleting user', error: error.message });
+  }
+};
+
 // ── Devices ───────────────────────────────────────────────────────────────────
 
 export const getAdminDevices = async (req: AuthRequest, res: Response) => {
@@ -528,5 +547,51 @@ export const getUserDataCounts = async (req: AuthRequest, res: Response) => {
     });
   } catch (error: any) {
     return res.status(500).json({ message: 'Error fetching data counts', error: error.message });
+  }
+};
+
+// ── Pricing config ─────────────────────────────────────────────────────────────
+
+const DEFAULT_PRICING = [
+  { key: 'MONTHLY_200',   cents: 1999,  label: '1 Month',   months: 1  },
+  { key: 'QUARTERLY_400', cents: 4999,  label: '1 Quarter', months: 3  },
+  { key: 'YEARLY_600',    cents: 21999, label: '1 Year',    months: 12 },
+];
+
+export const getPricing = async (_req: AuthRequest, res: Response) => {
+  try {
+    // Seed defaults if table is empty
+    const existing = await prisma.pricingConfig.findMany();
+    if (existing.length === 0) {
+      await prisma.pricingConfig.createMany({ data: DEFAULT_PRICING });
+      return res.json({ pricing: DEFAULT_PRICING });
+    }
+    return res.json({ pricing: existing });
+  } catch (error: any) {
+    return res.status(500).json({ message: 'Error fetching pricing', error: error.message });
+  }
+};
+
+export const updatePricing = async (req: AuthRequest, res: Response) => {
+  try {
+    const { pricing } = req.body as {
+      pricing: Array<{ key: string; cents: number; label: string; months: number }>;
+    };
+    if (!Array.isArray(pricing) || pricing.length === 0) {
+      return res.status(400).json({ message: 'pricing array required' });
+    }
+
+    const results = await Promise.all(
+      pricing.map(p =>
+        prisma.pricingConfig.upsert({
+          where:  { key: p.key },
+          update: { cents: p.cents, label: p.label, months: p.months },
+          create: { key: p.key, cents: p.cents, label: p.label, months: p.months },
+        })
+      )
+    );
+    return res.json({ pricing: results });
+  } catch (error: any) {
+    return res.status(500).json({ message: 'Error updating pricing', error: error.message });
   }
 };

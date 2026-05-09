@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Navigate, Outlet, Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Cpu, ShoppingBag, CreditCard,
-  MessageSquare, Map, Trash2, Menu, X, LogOut, Loader2,
+  MessageSquare, Map, Trash2, Menu, X, LogOut, Loader2, Tag,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 
@@ -13,6 +13,7 @@ const navItems = [
   { name: 'Orders',          icon: <ShoppingBag size={18} />,     path: '/admin/orders' },
   { name: 'Subscriptions',   icon: <CreditCard size={18} />,      path: '/admin/subscriptions' },
   { name: 'Enquiries',       icon: <MessageSquare size={18} />,   path: '/admin/enquiries' },
+  { name: 'Pricing',          icon: <Tag size={18} />,             path: '/admin/pricing' },
   { name: 'Tracking Mgr',    icon: <Map size={18} />,             path: '/admin/tracking' },
   { name: 'Data Purge',      icon: <Trash2 size={18} />,          path: '/admin/purge' },
 ];

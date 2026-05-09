@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { addTrackingEvent, getBagTimeline, getTrackingByTag, mobilePing, getLatestGps } from '../controllers/tracking.controller';
+import { addTrackingEvent, getBagTimeline, getTrackingByTag, mobilePing, getLatestGps, sendMobileLink } from '../controllers/tracking.controller';
 import { authenticateToken } from '../middlewares/auth.middleware';
 import { requirePremium } from '../middlewares/premium.middleware';
 
@@ -13,6 +13,7 @@ router.get('/mobile-gps/:deviceId', getLatestGps);
 router.use(authenticateToken);
 
 router.post('/', addTrackingEvent);
+router.post('/send-mobile-link', sendMobileLink);
 router.get('/by-tag/:tag', requirePremium, getTrackingByTag);
 router.get('/:bagId', requirePremium, getBagTimeline);
 

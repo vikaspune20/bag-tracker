@@ -202,3 +202,11 @@ model ContactEnquiry {
 
   @@index([status, createdAt])
 }
+
+model PricingConfig {
+  key       String   @id   // MONTHLY_200 | QUARTERLY_400 | YEARLY_600
+  cents     Int
+  label     String
+  months    Int
+  updatedAt DateTime @updatedAt
+}

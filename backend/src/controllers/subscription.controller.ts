@@ -13,21 +13,39 @@ const getStripeClient = () => {
 };
 
 function getAppUrl() {
-  return process.env.APP_URL || 'http://localhost:5173';
+  return process.env.APP_URL || 'http://jcsmartbag.com';
 }
 
 // ── Plan helpers ──────────────────────────────────────────────────────────────
 
 type DeviceSubPlan = 'MONTHLY_200' | 'QUARTERLY_400' | 'YEARLY_600';
 
-const PLAN_META: Record<DeviceSubPlan, { months: number; cents: number; label: string }> = {
-  MONTHLY_200:  { months: 1,  cents: 20000, label: 'Monthly' },
-  QUARTERLY_400:{ months: 3,  cents: 40000, label: 'Quarterly' },
-  YEARLY_600:   { months: 12, cents: 60000, label: 'Yearly' },
+// Fallback hardcoded prices (used if DB has no pricing rows yet)
+const PLAN_META_DEFAULT: Record<DeviceSubPlan, { months: number; cents: number; label: string }> = {
+  MONTHLY_200:  { months: 1,  cents: 1999,  label: '1 Month'   },
+  QUARTERLY_400:{ months: 3,  cents: 4999,  label: '1 Quarter' },
+  YEARLY_600:   { months: 12, cents: 21999, label: '1 Year'    },
 };
 
+// Read live prices from DB; fall back to defaults if not configured
+async function getPlanMeta(): Promise<Record<DeviceSubPlan, { months: number; cents: number; label: string }>> {
+  try {
+    const rows = await prisma.pricingConfig.findMany();
+    if (rows.length === 0) return PLAN_META_DEFAULT;
+    const meta: any = { ...PLAN_META_DEFAULT };
+    for (const r of rows) {
+      if (r.key in meta) {
+        meta[r.key] = { months: r.months, cents: r.cents, label: r.label };
+      }
+    }
+    return meta;
+  } catch {
+    return PLAN_META_DEFAULT;
+  }
+}
+
 function isDeviceSubPlan(v: string): v is DeviceSubPlan {
-  return v in PLAN_META;
+  return v in PLAN_META_DEFAULT;
 }
 
 function addMonths(date: Date, months: number): Date {
@@ -53,10 +71,11 @@ export async function fulfillDeviceSubSession(session: any): Promise<void> {
       : `sess_${session.id}`;
 
   const now = new Date();
+  const planMeta = await getPlanMeta();
 
   for (const sel of selections) {
     if (!isDeviceSubPlan(sel.plan)) continue;
-    const meta = PLAN_META[sel.plan];
+    const meta = planMeta[sel.plan];
 
     const device = await prisma.trackingDevice.findUnique({
       where: { id: sel.deviceId },
@@ -283,10 +302,11 @@ export const createDeviceSubCheckoutSession = async (req: AuthRequest, res: Resp
     }
 
     const appUrl = getAppUrl();
+    const planMeta = await getPlanMeta();
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       line_items: selections.map(sel => {
-        const meta = PLAN_META[sel.plan as DeviceSubPlan];
+        const meta = planMeta[sel.plan as DeviceSubPlan];
         return {
           price_data: {
             currency: 'usd',

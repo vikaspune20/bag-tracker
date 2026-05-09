@@ -19,7 +19,7 @@ const getStripeClient = () => {
 };
 
 function getAppUrl() {
-  return process.env.APP_URL || 'http://localhost:5173';
+  return process.env.APP_URL || 'http://jcsmartbag.com';
 }
 
 function newDeviceId() {
@@ -387,7 +387,7 @@ export async function fulfillDeviceOrder(args: {
       select: { email: true, fullName: true },
     }).catch(() => null);
     if (user) {
-      const appUrl = process.env.APP_URL || 'http://localhost:5173';
+      const appUrl = process.env.APP_URL || 'http://jcsmartbag.com';
       const invoiceNumber = `INV-${order.id.slice(0, 8).toUpperCase()}`;
       sendDeviceOrderConfirmationEmail(user.email, user.fullName, {
         invoiceNumber,

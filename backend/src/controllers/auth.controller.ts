@@ -8,7 +8,7 @@ import prisma from '../utils/prisma';
 import { sendOtpEmail, sendWelcomeEmail, sendTestEmail } from '../utils/email';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supers3cr3tjwtk3y';
-const APP_URL = process.env.APP_URL || 'http://localhost:5173';
+const APP_URL = process.env.APP_URL || 'http://jcsmartbag.com';
 
 // ─────────────────────────────────────────────
 //  VALIDATION RULE SETS  (use as middleware)

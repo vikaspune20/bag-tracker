@@ -103,8 +103,8 @@ export const PrivacyPolicy = () => {
                   <li>You can request support or account-related assistance via email.</li>
                   <li>
                     If you want to request deletion of your account data, contact{' '}
-                    <a className="text-cyan-700 hover:underline" href="mailto:support@jcsmartbag.com">
-                      support@jcsmartbag.com
+                    <a className="text-cyan-700 hover:underline" href="mailto:service@jcsmartbag.com">
+                      service@jcsmartbag.com
                     </a>
                     .
                   </li>
@@ -115,8 +115,8 @@ export const PrivacyPolicy = () => {
                 <h2 className="font-display text-xl font-semibold text-landing-text">7. Contact</h2>
                 <p className="mt-3 text-landing-muted">
                   Questions about privacy? Email{' '}
-                  <a className="text-cyan-700 hover:underline" href="mailto:support@jcsmartbag.com">
-                    support@jcsmartbag.com
+                  <a className="text-cyan-700 hover:underline" href="mailto:service@jcsmartbag.com">
+                    service@jcsmartbag.com
                   </a>{' '}
                   or use our <Link to="/contact" className="text-cyan-700 hover:underline">contact form</Link>.
                 </p>

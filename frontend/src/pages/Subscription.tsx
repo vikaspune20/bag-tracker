@@ -34,10 +34,23 @@ interface PaymentRecord {
 
 type Plan = { id: 'MONTHLY_200' | 'QUARTERLY_400' | 'YEARLY_600'; label: string; price: string; cadence: string; months: number };
 
-const PLANS: Plan[] = [
-  { id: 'MONTHLY_200',   label: 'Monthly',   price: '$200', cadence: '/month',    months: 1  },
-  { id: 'QUARTERLY_400', label: 'Quarterly', price: '$400', cadence: '/3 months', months: 3  },
-  { id: 'YEARLY_600',    label: 'Yearly',    price: '$600', cadence: '/year',     months: 12 },
+const CADENCE: Record<string, string> = {
+  MONTHLY_200:   '/month',
+  QUARTERLY_400: '/3 months',
+  YEARLY_600:    '/year',
+};
+
+const PLAN_LABELS: Record<string, string> = {
+  MONTHLY_200:   'Monthly',
+  QUARTERLY_400: 'Quarterly',
+  YEARLY_600:    'Yearly',
+};
+
+// Default fallback (shown before API responds)
+const PLANS_DEFAULT: Plan[] = [
+  { id: 'MONTHLY_200',   label: 'Monthly',   price: '$19.99', cadence: '/month',    months: 1  },
+  { id: 'QUARTERLY_400', label: 'Quarterly', price: '$49.99', cadence: '/3 months', months: 3  },
+  { id: 'YEARLY_600',    label: 'Yearly',    price: '$219.99',cadence: '/year',     months: 12 },
 ];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -82,6 +95,7 @@ export const Subscription = () => {
   const [statusLoading, setStatusLoading] = useState(true);
   const [history, setHistory] = useState<PaymentRecord[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [plans, setPlans] = useState<Plan[]>(PLANS_DEFAULT);
 
   // Selection state: Set of device.id strings
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -116,6 +130,29 @@ export const Subscription = () => {
       setHistory(data.history ?? []);
     } catch { /* silently fail */ }
     finally { setHistoryLoading(false); }
+  }, []);
+
+  // ── Fetch live pricing from admin config ────────────────────────────────────
+  useEffect(() => {
+    api.get('/admin/pricing').then(({ data }) => {
+      const rows: Array<{ key: string; cents: number; months: number }> = data.pricing ?? [];
+      const order = ['MONTHLY_200', 'QUARTERLY_400', 'YEARLY_600'];
+      const mapped = order
+        .map(key => {
+          const row = rows.find(r => r.key === key);
+          if (!row) return null;
+          const dollars = (row.cents / 100).toFixed(2).replace(/\.00$/, '');
+          return {
+            id: key as Plan['id'],
+            label: PLAN_LABELS[key] ?? key,
+            price: `$${dollars}`,
+            cadence: CADENCE[key] ?? '',
+            months: row.months,
+          };
+        })
+        .filter(Boolean) as Plan[];
+      if (mapped.length > 0) setPlans(mapped);
+    }).catch(() => { /* keep defaults */ });
   }, []);
 
   // ── On mount ────────────────────────────────────────────────────────────────
@@ -217,7 +254,7 @@ export const Subscription = () => {
   // ── Derived ─────────────────────────────────────────────────────────────────
   const selectedDevices = (status?.devices ?? []).filter(d => selected.has(d.id));
   const total = selectedDevices.reduce((acc, d) => {
-    const plan = PLANS.find(p => p.id === (planChoice[d.id] || 'MONTHLY_200'))!;
+    const plan = plans.find(p => p.id === (planChoice[d.id] || 'MONTHLY_200'))!;
     return acc + parseInt(plan.price.replace('$', ''), 10);
   }, 0);
 
@@ -381,7 +418,7 @@ export const Subscription = () => {
                   </div>
                   {/* Plan radio buttons */}
                   <div className="grid grid-cols-3 gap-2">
-                    {PLANS.map(plan => (
+                    {plans.map(plan => (
                       <label
                         key={plan.id}
                         className={`relative flex flex-col items-center gap-1 p-3 rounded-xl border-2 cursor-pointer transition-all ${
