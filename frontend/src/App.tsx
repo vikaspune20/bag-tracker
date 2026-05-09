@@ -7,6 +7,7 @@ import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { Dashboard } from './pages/Dashboard';
 import { Trips } from './pages/Trips';
+import { TripDetail } from './pages/TripDetail';
 import { Bags } from './pages/Bags';
 import { Tracking } from './pages/Tracking';
 import { TripHistory } from './pages/TripHistory';
@@ -29,6 +30,17 @@ import { MyDevices } from './pages/MyDevices';
 import { DeviceOrders } from './pages/DeviceOrders';
 import { DeviceInvoice } from './pages/DeviceInvoice';
 import { SubscriptionInvoice } from './pages/SubscriptionInvoice';
+import { MobileTracker } from './pages/MobileTracker';
+import { AdminLayout } from './components/AdminLayout';
+import { AdminDashboard } from './pages/admin/AdminDashboard';
+import { AdminUsers } from './pages/admin/AdminUsers';
+import { AdminUserDetail } from './pages/admin/AdminUserDetail';
+import { AdminDevices } from './pages/admin/AdminDevices';
+import { AdminOrders } from './pages/admin/AdminOrders';
+import { AdminSubscriptions } from './pages/admin/AdminSubscriptions';
+import { AdminEnquiries } from './pages/admin/AdminEnquiries';
+import { AdminTracking } from './pages/admin/AdminTracking';
+import { AdminDataPurge } from './pages/admin/AdminDataPurge';
 
 const App = () => {
   const checkAuth = useAuthStore(state => state.checkAuth);
@@ -53,11 +65,13 @@ const App = () => {
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/refunds" element={<RefundCancellationPolicy />} />
         <Route path="/contact-info" element={<ContactInformation />} />
+        <Route path="/mobile-tracker" element={<MobileTracker />} />
 
         {/* Protected Routes inside Layout */}
         <Route element={<Layout />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/trips" element={<Trips />} />
+          <Route path="/trips/:id" element={<TripDetail />} />
           <Route path="/bags" element={<Bags />} />
           <Route path="/tracking" element={<Tracking />} />
           <Route path="/history" element={<TripHistory />} />
@@ -71,6 +85,19 @@ const App = () => {
           <Route path="/orders" element={<DeviceOrders />} />
           <Route path="/orders/:id/invoice" element={<DeviceInvoice />} />
           <Route path="/subscription-invoice/:id" element={<SubscriptionInvoice />} />
+        </Route>
+
+        {/* Admin Routes */}
+        <Route element={<AdminLayout />}>
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/users" element={<AdminUsers />} />
+          <Route path="/admin/users/:id" element={<AdminUserDetail />} />
+          <Route path="/admin/devices" element={<AdminDevices />} />
+          <Route path="/admin/orders" element={<AdminOrders />} />
+          <Route path="/admin/subscriptions" element={<AdminSubscriptions />} />
+          <Route path="/admin/enquiries" element={<AdminEnquiries />} />
+          <Route path="/admin/tracking" element={<AdminTracking />} />
+          <Route path="/admin/purge" element={<AdminDataPurge />} />
         </Route>
 
         {/* Catch All */}

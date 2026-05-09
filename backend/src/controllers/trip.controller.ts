@@ -260,3 +260,24 @@ export const getTripById = async (req: AuthRequest, res: Response) => {
 
   }
 };
+
+export const deleteTrip = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+    const { id } = req.params;
+    const trip = await prisma.trip.findUnique({ where: { id } });
+    if (!trip) return res.status(404).json({ message: 'Trip not found' });
+    if (trip.userId !== req.user.id && req.user.role !== 'ADMIN') {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+    // Cascade: delete tracking logs → bags → trip
+    await prisma.$transaction([
+      prisma.trackingLog.deleteMany({ where: { bag: { tripId: id } } }),
+      prisma.bag.deleteMany({ where: { tripId: id } }),
+      prisma.trip.delete({ where: { id } }),
+    ]);
+    return res.status(200).json({ message: 'Trip deleted' });
+  } catch (error: any) {
+    return res.status(500).json({ message: 'Failed to delete trip', error: error.message });
+  }
+};

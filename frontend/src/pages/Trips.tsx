@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import { Plane, Plus, Loader2, Briefcase, Trash2, Cpu } from 'lucide-react';
 import { format } from 'date-fns';
@@ -9,6 +10,7 @@ import { SubscriptionGate } from '../components/SubscriptionGate';
 type AvailableDevice = { id: string; deviceId: string; expiresAt: string };
 
 export const Trips = () => {
+    const navigate = useNavigate();
     const [trips, setTrips] = useState<any[]>([]);
     const [devices, setDevices] = useState<AvailableDevice[]>([]);
     const [loading, setLoading] = useState(true);
@@ -183,7 +185,10 @@ export const Trips = () => {
                             </div>
 
                             <div className="px-5 pb-5">
-                                <button className="w-full py-2.5 bg-airline-light text-airline-dark text-sm font-semibold rounded-xl hover:bg-gray-200 transition-colors">
+                                <button
+                                    onClick={() => navigate(`/trips/${trip.id}`)}
+                                    className="w-full py-2.5 bg-airline-light text-airline-dark text-sm font-semibold rounded-xl hover:bg-gray-200 transition-colors"
+                                >
                                     Manage Trip & Bags
                                 </button>
                             </div>

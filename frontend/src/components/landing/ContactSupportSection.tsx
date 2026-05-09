@@ -1,29 +1,42 @@
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { ScrollReveal } from './ScrollReveal';
 import { cn } from '../../lib/cn';
+import api from '../../utils/api';
 
 const schema = z.object({
   name: z.string().min(2, 'Please enter your name'),
   email: z.string().email('Enter a valid email'),
+  subject: z.string().optional(),
   message: z.string().min(10, 'Tell us a bit more (at least 10 characters)'),
 });
 
 type FormValues = z.infer<typeof schema>;
 
 export function ContactSupportSection() {
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitSuccessful },
+    formState: { errors, isSubmitting },
     reset,
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
   });
 
-  const onSubmit = (_data: FormValues) => {
-    reset();
+  const onSubmit = async (data: FormValues) => {
+    setSubmitError(null);
+    try {
+      await api.post('/contact', data);
+      setSubmitted(true);
+      reset();
+    } catch (err: any) {
+      setSubmitError(err.response?.data?.message || 'Failed to send. Please try again.');
+    }
   };
 
   const field = (hasError: boolean) =>
@@ -92,6 +105,17 @@ export function ContactSupportSection() {
                 )}
               </div>
               <div>
+                <label htmlFor="contact-subject" className="mb-2 block text-xs font-medium text-landing-muted">
+                  Subject <span className="text-slate-400">(optional)</span>
+                </label>
+                <input
+                  id="contact-subject"
+                  placeholder="What's this about?"
+                  className={field(false)}
+                  {...register('subject')}
+                />
+              </div>
+              <div>
                 <label htmlFor="contact-message" className="mb-2 block text-xs font-medium text-landing-muted">
                   Message
                 </label>
@@ -110,14 +134,20 @@ export function ContactSupportSection() {
 
             <button
               type="submit"
-              className="btn-ripple mt-8 w-full rounded-full bg-gradient-to-r from-neon-blue to-neon-teal py-3.5 text-sm font-semibold text-white shadow-neon-soft transition hover:brightness-110"
+              disabled={isSubmitting}
+              className="btn-ripple mt-8 w-full rounded-full bg-gradient-to-r from-neon-blue to-neon-teal py-3.5 text-sm font-semibold text-white shadow-neon-soft transition hover:brightness-110 disabled:opacity-60"
             >
-              Submit
+              {isSubmitting ? 'Sending…' : 'Submit'}
             </button>
 
-            {isSubmitSuccessful && (
+            {submitted && (
               <p className="mt-6 text-center text-sm text-teal-600" role="status">
                 Thanks — we&apos;ll get back to you shortly.
+              </p>
+            )}
+            {submitError && (
+              <p className="mt-6 text-center text-sm text-red-600" role="alert">
+                {submitError}
               </p>
             )}
           </form>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Loader2, Cpu, BadgeCheck, Clock } from 'lucide-react';
+import { Loader2, Cpu, BadgeCheck, Clock, Smartphone } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import api from '../utils/api';
 import { useSubscriptionStatus } from '../hooks/useSubscriptionStatus';
@@ -135,12 +135,23 @@ export const MyDevices = () => {
 
                   {/* CTA */}
                   {d.attachedTo ? (
-                    <Link
-                      to={`/tracking?bagId=${d.attachedTo.bagId}`}
-                      className="mt-auto text-center text-sm font-bold text-white bg-airline-blue py-2.5 rounded-xl hover:bg-airline-dark transition-colors"
-                    >
-                      View Tracking →
-                    </Link>
+                    <div className="mt-auto flex flex-col gap-2">
+                      <Link
+                        to={`/tracking?bagId=${d.attachedTo.bagId}`}
+                        className="text-center text-sm font-bold text-white bg-airline-blue py-2.5 rounded-xl hover:bg-airline-dark transition-colors"
+                      >
+                        View Tracking →
+                      </Link>
+                      {/* Mobile GPS tracker link */}
+                      <a
+                        href={`/mobile-tracker?deviceId=${encodeURIComponent(d.deviceId)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-1.5 text-center text-sm font-semibold text-emerald-700 bg-emerald-50 py-2.5 rounded-xl hover:bg-emerald-100 transition-colors"
+                      >
+                        <Smartphone size={14} /> Track via Phone
+                      </a>
+                    </div>
                   ) : !expired ? (
                     <Link
                       to="/trips"

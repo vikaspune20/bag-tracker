@@ -86,6 +86,10 @@ model TrackingLog {
   status          String
   airportLocation String?
   remarks         String?
+  latitude        Float?
+  longitude       Float?
+  accuracy        Float?
+  source          String   @default("MANUAL")  // MANUAL | MOBILE_GPS | DEVICE
   timestamp       DateTime @default(now())
 
   bag Bag @relation(fields: [bagId], references: [id])
@@ -172,13 +176,29 @@ model DeviceOrder {
   shippingState         String
   shippingZip           String
   shippingCountry       String    @default("United States")
-  bonusGranted          Boolean   @default(false)
-  paidAt                DateTime?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  bonusGranted             Boolean   @default(false)
+  shippingTrackingNumber   String?
+  shippingCarrier          String?
+  paidAt                   DateTime?
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
 
   user    User             @relation(fields: [userId], references: [id])
   devices TrackingDevice[]
 
   @@index([userId, status])
+}
+
+model ContactEnquiry {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  subject   String?
+  message   String
+  status    String   @default("OPEN")  // OPEN | IN_PROGRESS | RESOLVED
+  adminNote String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, createdAt])
 }

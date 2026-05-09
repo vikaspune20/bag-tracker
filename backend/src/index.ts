@@ -13,6 +13,8 @@ import path from 'path';
 import dashboardRoutes from './routes/dashboard.routes';
 import deviceRoutes from './routes/device.routes';
 import cronRoutes from './routes/cron.routes';
+import contactRoutes from './routes/contact.routes';
+import adminRoutes from './routes/admin.routes';
 
 dotenv.config();
 
@@ -44,6 +46,8 @@ app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/devices', deviceRoutes);
 app.use('/api/internal', cronRoutes);
+app.use('/api/contact', contactRoutes);
+app.use('/api/admin', adminRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

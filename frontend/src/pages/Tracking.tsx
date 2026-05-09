@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import api from '../utils/api';
 import { Loader2, CheckCircle2, Plane, Navigation, PackageCheck, MapPin, Briefcase, Cpu, ArrowLeft } from 'lucide-react';
+import { LiveGpsMap } from '../components/LiveGpsMap';
 import { format } from 'date-fns';
 import { SubscriptionGate } from '../components/SubscriptionGate';
 
@@ -214,6 +215,14 @@ const TrackingInner = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Live GPS Map — shown when GPS pings exist */}
+            {events.some((e: any) => e.latitude != null) && (
+              <LiveGpsMap
+                bagId={bagId!}
+                deviceId={bagInfo?.tagNumber}
+              />
+            )}
 
             {/* Timeline */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 sm:p-8">
