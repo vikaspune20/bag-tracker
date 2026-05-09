@@ -4,9 +4,9 @@ import { Smartphone, Wifi, WifiOff, CheckCircle2, AlertCircle, Loader2, Play, Sq
 import axios from 'axios';
 import { Logo } from '../components/Logo';
 
-// Use Vite proxy (/api) so that both desktop (HTTP) and mobile (HTTPS on LAN)
-// go through the same Vite dev server — avoids mixed-content blocking entirely.
-const API_BASE = '/api';
+// In dev: Vite proxy forwards /api → localhost:5000 (avoids mixed-content on LAN HTTPS)
+// In prod: use the real backend URL from env
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
 const PING_INTERVAL_MS = 30_000; // every 30 seconds
 
 type GpsState = 'idle' | 'requesting' | 'active' | 'error' | 'unsupported';
