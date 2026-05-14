@@ -2,10 +2,9 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import nodemailer from 'nodemailer';
 import { body, validationResult } from 'express-validator';
 import prisma from '../utils/prisma';
-import { sendOtpEmail, sendWelcomeEmail, sendTestEmail } from '../utils/email';
+import { sendOtpEmail, sendWelcomeEmail, sendTestEmail, sendPasswordResetEmail } from '../utils/email';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supers3cr3tjwtk3y';
 const APP_URL = process.env.APP_URL || 'http://jcsmartbag.com';
@@ -370,12 +369,6 @@ export const updateProfile = async (req: any, res: Response) => {
 //  PASSWORD RESET
 // ─────────────────────────────────────────────
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT || 587),
-  secure: false,
-  auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-});
 
 export const requestPasswordReset = async (req: Request, res: Response) => {
   if (handleValidationErrors(req, res)) return;
@@ -399,19 +392,7 @@ export const requestPasswordReset = async (req: Request, res: Response) => {
 
     const resetLink = `${APP_URL}/reset-password?token=${token}`;
 
-    await transporter.sendMail({
-      from: process.env.MAIL_FROM || 'no-reply@baggagetrack.local',
-      to: email,
-      subject: 'SmartBag Password Reset',
-      html: `
-        <div style="font-family:sans-serif;max-width:480px;margin:auto;">
-          <h2>Password Reset Request</h2>
-          <p>We received a request to reset your password. This link expires in <strong>15 minutes</strong>.</p>
-          <a href="${resetLink}" style="display:inline-block;padding:12px 24px;background:#1a73e8;color:#fff;border-radius:8px;text-decoration:none;">Reset Password</a>
-          <p style="margin-top:24px;color:#888;font-size:12px;">If you didn't request this, you can safely ignore this email.</p>
-        </div>
-      `,
-    });
+    await sendPasswordResetEmail(email, resetLink);
 
     return res.status(200).json({ message: 'If that email exists, a reset link has been sent.' });
   } catch (error: any) {

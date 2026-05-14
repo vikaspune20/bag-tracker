@@ -1,52 +1,67 @@
-import nodemailer, { Transporter } from 'nodemailer';
+import { ClientSecretCredential } from '@azure/identity';
 
-let cachedTransporter: Transporter | null = null;
+let credential: ClientSecretCredential | null = null;
 let warned = false;
 
-function getTransporter(): Transporter | null {
-  if (cachedTransporter) return cachedTransporter;
-  const host = process.env.SMTP_HOST;
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-  if (!host || !user || !pass) {
+function getCredential(): ClientSecretCredential | null {
+  if (credential) return credential;
+  const tenantId = process.env.AZURE_TENANT_ID;
+  const clientId = process.env.AZURE_CLIENT_ID;
+  const clientSecret = process.env.AZURE_CLIENT_SECRET;
+  if (!tenantId || !clientId || !clientSecret) {
     if (!warned) {
-      console.warn(
-        '[email] SMTP_HOST/SMTP_USER/SMTP_PASS missing — outgoing emails will be skipped (logged only).'
-      );
+      console.warn('[email] AZURE_TENANT_ID/AZURE_CLIENT_ID/AZURE_CLIENT_SECRET missing — outgoing emails will be skipped (logged only).');
       warned = true;
     }
     return null;
   }
-  cachedTransporter = nodemailer.createTransport({
-    host,
-    port: Number(process.env.SMTP_PORT || 587),
-    secure: Number(process.env.SMTP_PORT || 587) === 465,
-    auth: { user, pass },
-  });
-  return cachedTransporter;
+  credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
+  return credential;
 }
 
-function fromHeader() {
-  const name = process.env.MAIL_FROM_NAME || 'JC Smartbag';
-  const addr = process.env.MAIL_FROM || process.env.SMTP_USER || 'no-reply@jcsmartbag.com';
-  return `"${name}" <${addr}>`;
+function fromAddress() {
+  return process.env.MAIL_FROM || 'service@jcsmartbag.com';
+}
+
+function fromName() {
+  return process.env.MAIL_FROM_NAME || 'JC Smartbag';
 }
 
 async function send(to: string, subject: string, html: string, text?: string) {
-  const transporter = getTransporter();
-  if (!transporter) {
+  const cred = getCredential();
+  if (!cred) {
     console.log(`[email:skipped] To: ${to} | Subject: ${subject}`);
     return { skipped: true };
   }
   try {
-    const info = await transporter.sendMail({
-      from: fromHeader(),
-      to,
-      subject,
-      html,
-      text: text || stripHtml(html),
-    });
-    return { messageId: info.messageId };
+    const token = await cred.getToken('https://graph.microsoft.com/.default');
+    const sender = fromAddress();
+    const body = {
+      message: {
+        subject,
+        body: { contentType: 'HTML', content: html },
+        toRecipients: [{ emailAddress: { address: to } }],
+        from: { emailAddress: { address: sender, name: fromName() } },
+      },
+      saveToSentItems: false,
+    };
+    const res = await fetch(
+      `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(sender)}/sendMail`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token.token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      }
+    );
+    if (!res.ok) {
+      const detail = await res.text();
+      console.error(`[email:error] ${subject} -> ${to}: HTTP ${res.status} ${detail}`);
+      return { error: `HTTP ${res.status}` };
+    }
+    return { sent: true };
   } catch (err: any) {
     console.error(`[email:error] ${subject} -> ${to}:`, err?.message || err);
     return { error: err?.message || 'send failed' };
@@ -265,13 +280,24 @@ export function sendMobileTrackerLinkEmail(
   return send(to, `JC Smartbag — Mobile GPS Tracker for ${tagNumber}`, html);
 }
 
+export function sendPasswordResetEmail(to: string, resetLink: string) {
+  const html = shell(`
+    <p>We received a request to reset your JC Smartbag password. This link expires in <strong>15 minutes</strong>.</p>
+    <p style="margin:24px 0;text-align:center;">
+      <a href="${escapeHtml(resetLink)}" style="display:inline-block;background:#1a73e8;color:#ffffff;padding:12px 22px;border-radius:10px;text-decoration:none;font-weight:700;">Reset Password</a>
+    </p>
+    <p>If you didn't request this, you can safely ignore this email.</p>
+  `);
+  return send(to, 'JC Smartbag — Password Reset', html);
+}
+
 export async function sendTestEmail(to: string) {
   const html = shell(`
-    <p><strong>SMTP test from JC Smartbag</strong></p>
-    <p>If you can read this, your SMTP credentials are working correctly.</p>
+    <p><strong>Microsoft Graph API test from JC Smartbag</strong></p>
+    <p>If you can read this, your Azure credentials are working correctly.</p>
     <p style="color:#6b7280;font-size:13px;">Sent at ${new Date().toUTCString()}.</p>
   `);
-  return send(to, 'JC Smartbag — SMTP test', html);
+  return send(to, 'JC Smartbag — Email test', html);
 }
 
 function escapeHtml(s: string) {
