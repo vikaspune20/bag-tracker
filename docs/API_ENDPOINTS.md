@@ -21,7 +21,7 @@ Auth = `Authorization: Bearer <jwt>` issued by `POST /api/auth/login`. Premium-g
 | POST | `/forgot-password` | – | `{ email }` | Always 200 (no enumeration) |
 | POST | `/reset-password` | – | `{ token, password }` | |
 | GET | `/profile` | JWT | – | `{ user }` |
-| PUT | `/profile` | JWT | multipart `profilePic` + fields | Cloudinary upload |
+| PUT | `/profile` | JWT | multipart `profilePic` + `{ fullName?, phone?, address?, state?, city?, zip?, identificationNo? }` | Profile pic on Cloudinary (`profile-pictures/`). Only provided fields are updated. Empty `identificationNo` → null. |
 | GET | `/app-version` | – | – | `{ minVersion }` |
 
 ## Trips (`/api/trips`)
@@ -30,7 +30,9 @@ Auth = `Authorization: Bearer <jwt>` issued by `POST /api/auth/login`. Premium-g
 |---|---|---|---|---|
 | POST | `/` | JWT + **Premium** + **OwnsDevice** | multipart: `flightNumber`, `airlineName`, `departureAirport`, `destinationAirport`, `departureDate`, `departureTime`, `arrivalDate`, `arrivalTime`, `bags` (JSON), `image_<i>` files | Each bag may set `tagNumber` to a device's `deviceId` to attach a tracking device. Sends a TRIP_UPDATE notification + email on success. |
 | GET | `/` | JWT | – | `{ trips: [...] }`, each bag includes synthetic `device` field |
-| GET | `/:id` | JWT | – | `{ data: trip }` |
+| GET | `/:id` | JWT | – | `{ data: trip }` (includes `endedAt`) |
+| POST | `/:id/end` | JWT | – | Sets `endedAt = now()` (idempotent). Releases any tracking devices attached via this trip's bags. Owner/ADMIN only. |
+| DELETE | `/:id` | JWT | – | Cascades to bags, tracking logs |
 
 ## Bags (`/api/bags`)
 
@@ -39,7 +41,7 @@ Auth = `Authorization: Bearer <jwt>` issued by `POST /api/auth/login`. Premium-g
 | POST | `/` | JWT + **Premium** + **OwnsDevice** | multipart `tripId`, `tagNumber`, `weight`, `description`, `image` | tagNumber may equal a device's `deviceId` |
 | GET | `/` | JWT | – | `{ bags: [...] }` with synthetic `device` |
 | GET | `/:id` | JWT | – | `{ bag }` |
-| PATCH | `/:id` | JWT + **Premium** | `{ tagNumber?, description?, weight? }` | Re-validates device on tagNumber change |
+| PATCH | `/:id` | JWT + **Premium** | multipart: `description?`, `weight?`, `image?` (new Cloudinary upload), `tagNumber?` | Re-validates device on tagNumber change. Image, if provided, replaces `imagePath` with new Cloudinary URL. |
 | DELETE | `/:id` | JWT | – | Detaches by deletion |
 
 ## Tracking (`/api/tracking`)
@@ -94,9 +96,7 @@ Auth = `Authorization: Bearer <jwt>` issued by `POST /api/auth/login`. Premium-g
 
 ## Static
 
-| Method | Path | Notes |
-|---|---|---|
-| GET | `/uploads/<file>` | Public bag image serving |
+Bag and profile images are uploaded directly to **Cloudinary** (`multer-storage-cloudinary`). `imagePath` / `profilePicUrl` store the absolute Cloudinary URL. No `/uploads` mount on the backend any more.
 
 ## Error envelope
 

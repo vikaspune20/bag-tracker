@@ -67,7 +67,10 @@ In `docker-compose.prod.yml`:
 - `APP_URL`: should match the **canonical** public site URL used by users
   - Examples: `https://jcsmartbag.com` or `https://www.jcsmartbag.com`
   - This affects links (e.g., password reset) sent from the backend
-- `STRIPE_*`, `SMTP_*`: must be set for payments and email flows
+- `STRIPE_*`: must be set for payments
+- `AZURE_TENANT_ID` / `AZURE_CLIENT_ID` / `AZURE_CLIENT_SECRET` / `MAIL_FROM` / `MAIL_FROM_NAME`: required by the Azure SDK email helper (replaced nodemailer)
+- `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET`: required — all bag and profile uploads go to Cloudinary (no local disk)
+- `CRON_SECRET`: bearer used by external cron to call `POST /api/internal/run-expiry-reminders`
 
 ### Start/upgrade backend (on EC2)
 ```bash

@@ -3,11 +3,14 @@
 ## Trip management
 
 ### Workflow
-1. **Create.** From `/trips`, user clicks "Add Trip" → modal opens. They enter flight info, airports, dates/times, and **at least one bag** (each bag has tagNumber, weight, description, optional image). Submit posts multipart to `POST /api/trips`.
+1. **Create.** From `/trips`, user clicks "Add Trip" → modal opens. They enter flight info, airports, dates/times (browser blocks past dates via `min={today}`; submit handler rejects past departure / arrival ≤ departure / any bag missing a photo), and **at least one bag** (each bag has tagNumber, weight, description, **required photo with `capture="environment"`** to invoke the rear camera on mobile). Submit posts multipart to `POST /api/trips`.
 2. **Persist.** Backend creates the `Trip` row, then iterates the parsed `bags` JSON in a single `prisma.$transaction`. For each bag it stores the row, attaches the matching `image_<i>` file from `req.files`, and creates an initial `TrackingLog { status: 'Checked-in', airportLocation: departureAirport }`.
 3. **List.** `GET /api/trips` returns trips ordered by `departureDateTime` desc, each including its bags and the latest `TrackingLog` for status badges.
 4. **Detail.** `GET /api/trips/:id` returns one trip with **all** tracking logs per bag.
 5. **History.** `/history` page shows past trips (those with `arrivalDateTime` in the past).
+6. **End trip.** Both the Trips list card and the Trip detail page expose an **"End Trip & Release Devices"** button. Calls `POST /api/trips/:id/end` → sets `endedAt = now()`. Until then any attached `TrackingDevice` stays reserved (`available=false`). Ending the trip releases the device for reuse on a new trip/bag. Idempotent; ended trips show a confirmation card with the end timestamp instead of the button.
+
+> Important: device-availability checks (`validateDeviceTag` conflict query and `listMyDevices` `activeBag` lookup) key off `trip.endedAt IS NULL`, **not** `arrivalDateTime`. An unfinished trip — even one whose scheduled arrival has passed — keeps its devices reserved until explicitly ended.
 
 ### Files
 - Backend: [trip.controller.ts](../backend/src/controllers/trip.controller.ts), [trip.routes.ts](../backend/src/routes/trip.routes.ts).
@@ -16,10 +19,17 @@
 ## Baggage management
 
 ### Workflow
-1. **Standalone Add.** From `/bags` → "Add Bag" modal → choose existing trip, enter tag number, weight, description, optional image → `POST /api/bags`. A `TrackingLog { Checked-in, departureAirport }` is created.
+1. **Standalone Add.** From `/bags` → "Add Bag" modal → choose existing trip, enter tag number, weight, description, **required photo (`capture="environment"`)** → `POST /api/bags`. A `TrackingLog { Checked-in, departureAirport }` is created. Photo lands in Cloudinary `bag-photos/`.
 2. **List.** `GET /api/bags` returns the user's bags (joined to their trip), each with its tracking logs ordered desc.
 3. **Detail.** `GET /api/bags/:id` returns the bag with all tracking logs ordered asc — used by the timeline view.
-4. **Delete.** `DELETE /api/bags/:id` cascades to its `TrackingLog`s and `Notification`s.
+4. **Edit.** Pencil icon on each bag card opens an edit modal (current photo preview + optional replace, weight, description). Calls `PATCH /api/bags/:id` (multipart). New image, if provided, overwrites `imagePath` with a fresh Cloudinary URL. Tag/device link not editable here.
+5. **Delete.** `DELETE /api/bags/:id` cascades to its `TrackingLog`s and `Notification`s.
+
+### Photo display
+Frontend helper `bagImageUrl(path)` in [utils/api.ts](../frontend/src/utils/api.ts):
+- Absolute URLs (`https://res.cloudinary.com/...`) → returned as-is.
+- Legacy `/uploads/...` paths → resolved against `filesBase` (derived from `VITE_API_URL`, stripping `/api`). Will 404 in prod since the static mount is removed; left in for any local-dev legacy rows.
+Used everywhere bags render: [Bags.tsx](../frontend/src/pages/Bags.tsx), [Trips.tsx](../frontend/src/pages/Trips.tsx) (trip card thumbnails), [TripDetail.tsx](../frontend/src/pages/TripDetail.tsx), [Tracking.tsx](../frontend/src/pages/Tracking.tsx).
 
 ### Files
 - Backend: [bag.controller.ts](../backend/src/controllers/bag.controller.ts), [bag.routes.ts](../backend/src/routes/bag.routes.ts).
@@ -43,6 +53,7 @@
 
 ## Dashboard
 - `GET /api/dashboard` returns aggregate counts: `totalTrips`, `upcomingTrips`, `registeredBags`, `activeTracking`, `progress` (% delivered).
+- **Latest Tracking Updates** widget is computed frontend-side in [Dashboard.tsx](../frontend/src/pages/Dashboard.tsx): flatten `trackingLogs` across all bags returned by `GET /api/bags`, sort by `timestamp` desc, render top 6. Each row links to `/tracking?bagId=…`. No dedicated backend endpoint.
 
 ## Subscription (Stripe)
 

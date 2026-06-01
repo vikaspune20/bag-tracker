@@ -38,7 +38,8 @@ PostgreSQL via Prisma. All models live in [backend/prisma/schema.prisma](../back
 | `flightNumber`, `airlineName` | String | |
 | `departureAirport`, `destinationAirport` | String | IATA codes |
 | `departureDateTime` | DateTime | |
-| `arrivalDateTime` | DateTime? | |
+| `arrivalDateTime` | DateTime? | scheduled arrival (info only) |
+| `endedAt` | DateTime? | set when user explicitly ends trip; device-availability gate keys off this, **not** `arrivalDateTime` |
 | Indexes | `@@index([userId, departureDateTime])` | |
 | Relations | `user User`, `bags Bag[]` | |
 
@@ -49,7 +50,7 @@ PostgreSQL via Prisma. All models live in [backend/prisma/schema.prisma](../back
 | `tripId` | String | FK → Trip |
 | `tagNumber` | String | airline tag **or** the `deviceId` of an attached `TrackingDevice` |
 | `description` | String | |
-| `imagePath` | String? | local upload path |
+| `imagePath` | String? | absolute Cloudinary URL (`https://res.cloudinary.com/.../bag-photos/...`). Legacy rows may hold `/uploads/...` paths; frontend `bagImageUrl()` handles both. |
 | `weightLbs` | Float | |
 | Constraints | `@@unique([tripId, tagNumber])` | |
 | Indexes | `@@index([tripId, tagNumber])` | |

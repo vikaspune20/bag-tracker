@@ -22,11 +22,11 @@ bag-tracker/
 │   │   ├── config/
 │   │   │   └── devices.catalog.ts          (new) hardcoded shop catalog
 │   │   ├── utils/prisma.ts        Prisma client singleton
+│   │   ├── utils/cloudinaryUpload.ts  Shared `bagUpload` multer instance (Cloudinary `bag-photos/` folder, 8 MB cap, 1200×1200 limit)
 │   │   └── index.ts               App bootstrap + route mounting
 │   ├── prisma/
 │   │   ├── schema.prisma
 │   │   └── migrations/
-│   ├── uploads/                   Multer disk storage for bag images
 │   └── package.json
 │
 ├── frontend/                      React + Vite + TS SPA
@@ -61,7 +61,7 @@ bag-tracker/
 | ORM / DB | Prisma 5.9.1 + PostgreSQL (`pg` 8.11.3) |
 | Auth | JWT (`jsonwebtoken` 9.0.2) + bcryptjs |
 | Validation | express-validator |
-| File upload | multer + multer-storage-cloudinary + Cloudinary |
+| File upload | multer + multer-storage-cloudinary (Cloudinary for **all** bag + profile photos; no local disk) |
 | Payments | Stripe 18.5.0 |
 | Email | nodemailer |
 | Misc | cors, helmet, morgan |

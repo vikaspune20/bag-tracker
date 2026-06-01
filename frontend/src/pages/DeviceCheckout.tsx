@@ -111,7 +111,6 @@ export const DeviceCheckout = () => {
         <div className="md:order-2">
           <div className="bg-gray-50 rounded-xl p-4 space-y-3">
             <div className="flex items-center gap-3">
-              <img src={product.imageUrl} alt={product.name} className="w-16 h-16 rounded-md object-cover bg-white" />
               <div className="flex-1">
                 <p className="font-bold text-gray-900">{product.name}</p>
                 <p className="text-xs uppercase tracking-wider text-gray-500">{product.sku}</p>

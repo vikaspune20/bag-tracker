@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import api, { bagImageUrl } from '../utils/api';
+import { reverseGeocode } from '../utils/geocode';
 import { Loader2, CheckCircle2, Plane, Navigation, PackageCheck, MapPin, Briefcase, Cpu, ArrowLeft, Smartphone, Send, X, CheckCircle } from 'lucide-react';
 import { LiveGpsMap } from '../components/LiveGpsMap';
 import { format } from 'date-fns';
@@ -32,6 +33,7 @@ const TrackingInner = () => {
     const bagId = searchParams.get('bagId');
     const [loading, setLoading] = useState(false);
     const [events, setEvents] = useState<any[]>([]);
+    const [placeNames, setPlaceNames] = useState<Record<string, string>>({});
     const [bagInfo, setBagInfo] = useState<any>(null);
     const [bags, setBags] = useState<any[]>([]);
     const [bagsLoading, setBagsLoading] = useState(false);
@@ -83,6 +85,26 @@ const TrackingInner = () => {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        let cancelled = false;
+        const toResolve = events.filter(
+            (e) => e.latitude != null && e.longitude != null && placeNames[e.id] === undefined
+        );
+        (async () => {
+            for (const e of toResolve) {
+                try {
+                    const r = await reverseGeocode(e.latitude, e.longitude);
+                    if (cancelled) return;
+                    setPlaceNames((prev) => ({ ...prev, [e.id]: r.label }));
+                } catch {
+                    if (cancelled) return;
+                    setPlaceNames((prev) => ({ ...prev, [e.id]: '' }));
+                }
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [events]);
 
     const loadActiveBags = async () => {
         try {
@@ -290,10 +312,24 @@ const TrackingInner = () => {
                                                 {format(new Date(evt.timestamp), 'MMM d, h:mm a')}
                                             </span>
                                         </div>
-                                        <div className="flex items-center gap-1.5 text-sm text-gray-500">
-                                            <MapPin size={14} className="text-airline-sky flex-shrink-0" />
-                                            <span className="font-semibold">{evt.airportLocation}</span>
-                                        </div>
+                                        {(() => {
+                                            const hasCoords = evt.latitude != null && evt.longitude != null;
+                                            const resolved = hasCoords ? placeNames[evt.id] : undefined;
+                                            const primary = hasCoords
+                                                ? (resolved || (resolved === '' ? evt.airportLocation : 'Resolving location…'))
+                                                : evt.airportLocation;
+                                            return (
+                                                <div className="flex items-start gap-1.5 text-sm text-gray-500">
+                                                    <MapPin size={14} className="text-airline-sky flex-shrink-0 mt-0.5" />
+                                                    <div className="min-w-0">
+                                                        <p className="font-semibold text-gray-700 break-words">{primary}</p>
+                                                        {hasCoords && resolved && (
+                                                            <p className="text-[11px] text-gray-400 font-mono mt-0.5">{evt.airportLocation}</p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
                                         {evt.remarks && (
                                             <p className="text-sm text-gray-500 mt-2 italic bg-white px-3 py-2 rounded-lg border border-gray-100">
                                                 "{evt.remarks}"
