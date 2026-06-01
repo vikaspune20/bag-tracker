@@ -99,7 +99,7 @@ export const createTrip = async (req: AuthRequest, res: Response) => {
 
         const file = files.find(f => f.fieldname === `image_${i}`);
 
-        const imagePath = file ? `/uploads/${file.filename}` : null;
+        const imagePath = file ? (file as any).path : null;
 
         const bag = await tx.bag.create({
           data: {
@@ -258,6 +258,28 @@ export const getTripById = async (req: AuthRequest, res: Response) => {
       error: error.message
     });
 
+  }
+};
+
+export const endTrip = async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
+    const { id } = req.params;
+    const trip = await prisma.trip.findUnique({ where: { id } });
+    if (!trip) return res.status(404).json({ message: 'Trip not found' });
+    if (trip.userId !== req.user.id && req.user.role !== 'ADMIN') {
+      return res.status(403).json({ message: 'Forbidden' });
+    }
+    if (trip.endedAt) {
+      return res.status(200).json({ message: 'Trip already ended', trip });
+    }
+    const updated = await prisma.trip.update({
+      where: { id },
+      data: { endedAt: new Date() },
+    });
+    return res.status(200).json({ message: 'Trip ended', trip: updated });
+  } catch (error: any) {
+    return res.status(500).json({ message: 'Failed to end trip', error: error.message });
   }
 };
 

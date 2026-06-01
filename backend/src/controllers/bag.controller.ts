@@ -1,30 +1,15 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middlewares/auth.middleware';
 import prisma from '../utils/prisma';
-import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
 import { attachDeviceField, validateDeviceTag } from '../utils/deviceLink';
+import { bagUpload } from '../utils/cloudinaryUpload';
 
-// Configure Multer for local uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../../uploads');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
-  }
-});
-export const upload = multer({ storage });
+export const upload = bagUpload;
 
 export const addBag = async (req: AuthRequest, res: Response) => {
   try {
     const { tripId, tagNumber, weight, description } = req.body;
-    const imagePath = req.file ? `/uploads/${req.file.filename}` : null;
+    const imagePath = req.file ? (req.file as any).path : null;
 
     if (!req.user) return res.status(401).json({ message: 'Unauthorized' });
     if (!tagNumber || !String(tagNumber).trim()) {
@@ -64,6 +49,9 @@ export const addBag = async (req: AuthRequest, res: Response) => {
     const [enriched] = await attachDeviceField([bag], req.user.id);
     res.status(201).json({ bag: enriched });
   } catch (error: any) {
+    if (error?.code === 'P2002') {
+      return res.status(409).json({ message: 'This tag/device is already attached to a bag on this trip.' });
+    }
     res.status(500).json({ message: 'Error adding bag', error: error.message });
   }
 };
@@ -137,6 +125,7 @@ export const updateBag = async (req: AuthRequest, res: Response) => {
     }
     if (description !== undefined) data.description = description;
     if (weight !== undefined) data.weightLbs = Number(weight);
+    if (req.file) data.imagePath = (req.file as any).path;
 
     if (Object.keys(data).length === 0) {
       return res.status(400).json({ message: 'No updatable fields provided' });
@@ -146,6 +135,9 @@ export const updateBag = async (req: AuthRequest, res: Response) => {
     const [enriched] = await attachDeviceField([updated], req.user.id);
     return res.status(200).json({ bag: enriched });
   } catch (error: any) {
+    if (error?.code === 'P2002') {
+      return res.status(409).json({ message: 'This tag/device is already attached to another bag on this trip.' });
+    }
     return res.status(500).json({ message: 'Error updating bag', error: error.message });
   }
 };

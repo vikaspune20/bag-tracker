@@ -17,4 +17,12 @@ api.interceptors.request.use(
   }
 );
 
+const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const filesBase = apiBase.replace(/\/api\/?$/, '');
+export const bagImageUrl = (path?: string | null): string | null => {
+  if (!path) return null;
+  if (/^https?:\/\//i.test(path)) return path; // Cloudinary / absolute URL
+  return `${filesBase}${path.startsWith('/') ? path : '/' + path}`;
+};
+
 export default api;

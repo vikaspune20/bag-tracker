@@ -9,6 +9,7 @@ import { useSubscriptionStatus } from '../hooks/useSubscriptionStatus';
 export const Dashboard = () => {
   const user = useAuthStore(state => state.user);
   const [stats, setStats] = useState({ upcomingTrips: 0, totalBags: 0, activeTracking: 0, totalTrips: 0 });
+  const [recentEvents, setRecentEvents] = useState<Array<{ id: string; bagId: string; tagNumber: string; status: string; airportLocation: string | null; timestamp: string }>>([]);
   const { status: subStatus } = useSubscriptionStatus();
 
   useEffect(() => {
@@ -24,6 +25,19 @@ export const Dashboard = () => {
           activeTracking: bagsRes.data.bags.filter((b: any) => b.trackingLogs?.length > 0).length,
           totalTrips: tripsRes.data.trips.length,
         });
+
+        const events = bagsRes.data.bags.flatMap((b: any) =>
+          (b.trackingLogs || []).map((l: any) => ({
+            id: l.id,
+            bagId: b.id,
+            tagNumber: b.tagNumber,
+            status: l.status,
+            airportLocation: l.airportLocation,
+            timestamp: l.timestamp,
+          }))
+        );
+        events.sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        setRecentEvents(events.slice(0, 6));
       } catch (err) {
         console.error('Failed to load dashboard stats', err);
       }
@@ -145,13 +159,38 @@ export const Dashboard = () => {
         {/* Latest tracking */}
         <div className="bg-white rounded-2xl p-5 md:p-6 shadow-sm border border-gray-100">
           <h3 className="text-base md:text-lg font-bold text-gray-900 mb-4">Latest Tracking Updates</h3>
-          <div className="flex flex-col items-center justify-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-200 text-center gap-2">
-            <MapPin className="text-gray-300" size={32} />
-            <p className="text-gray-500 text-sm">No recent tracking updates.</p>
-            <Link to="/bags" className="text-xs font-semibold text-airline-blue hover:underline mt-1">
-              Add a bag to get started →
-            </Link>
-          </div>
+          {recentEvents.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-200 text-center gap-2">
+              <MapPin className="text-gray-300" size={32} />
+              <p className="text-gray-500 text-sm">No recent tracking updates.</p>
+              <Link to="/bags" className="text-xs font-semibold text-airline-blue hover:underline mt-1">
+                Add a bag to get started →
+              </Link>
+            </div>
+          ) : (
+            <ul className="divide-y divide-gray-100">
+              {recentEvents.map((ev) => (
+                <li key={ev.id}>
+                  <Link to={`/tracking?bagId=${ev.bagId}`} className="flex items-start gap-3 py-3 hover:bg-gray-50 rounded-lg px-2 -mx-2 transition-colors">
+                    <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
+                      <MapPin className="text-airline-blue" size={16} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate">
+                        <span className="font-mono">{ev.tagNumber}</span>
+                        <span className="text-gray-400 mx-1.5">·</span>
+                        {ev.status}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {ev.airportLocation && <span>{ev.airportLocation} · </span>}
+                        {formatDistanceToNow(new Date(ev.timestamp), { addSuffix: true })}
+                      </p>
+                    </div>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         {/* Quick actions */}

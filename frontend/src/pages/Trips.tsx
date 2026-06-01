@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../utils/api';
+import api, { bagImageUrl } from '../utils/api';
 import { Plane, Plus, Loader2, Briefcase, Trash2, Cpu } from 'lucide-react';
 import { format } from 'date-fns';
 import { usAirportOptions } from '../data/usData';
@@ -31,6 +31,16 @@ export const Trips = () => {
             console.error(error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleEndTrip = async (tripId: string) => {
+        if (!confirm('End this trip? Attached tracking devices will be released and can be reused.')) return;
+        try {
+            await api.post(`/trips/${tripId}/end`);
+            await Promise.all([loadTrips(), loadDevices()]);
+        } catch (err: any) {
+            alert(err?.response?.data?.message || 'Failed to end trip');
         }
     };
 
@@ -70,9 +80,32 @@ export const Trips = () => {
         setBagsData(newBags);
     };
 
+    const todayStr = new Date().toISOString().slice(0, 10);
+
     const handleCreateTrip = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         const formData = new FormData(e.currentTarget);
+
+        const depDate = String(formData.get('departureDate') || '');
+        const depTime = String(formData.get('departureTime') || '');
+        const arrDate = String(formData.get('arrivalDate') || '');
+        const arrTime = String(formData.get('arrivalTime') || '');
+        const now = new Date();
+        const dep = new Date(`${depDate}T${depTime}`);
+        const arr = new Date(`${arrDate}T${arrTime}`);
+        if (isNaN(dep.getTime()) || dep < now) {
+            alert('Departure date/time cannot be in the past.');
+            return;
+        }
+        if (isNaN(arr.getTime()) || arr < dep) {
+            alert('Arrival must be after departure.');
+            return;
+        }
+        if (bagsData.some(b => !b.image)) {
+            alert('Please capture a photo for every bag.');
+            return;
+        }
+
         const payload = new FormData();
 
         ['flightNumber', 'airlineName', 'departureAirport', 'destinationAirport', 'departureDate', 'departureTime', 'arrivalDate', 'arrivalTime'].forEach(field => {
@@ -167,30 +200,57 @@ export const Trips = () => {
                                 <div className="w-4 h-4 rounded-full bg-airline-light -mr-2 flex-shrink-0" />
                             </div>
 
-                            {/* Bag / device info */}
-                            <div className="px-5 py-4 flex-1">
-                                {trip.bags && trip.bags.some((b: any) => b.device) ? (
-                                    <div className="space-y-1.5">
-                                        {trip.bags.filter((b: any) => b.device).map((b: any) => (
-                                            <div key={b.id} className="flex items-center gap-2 text-xs text-airline-blue font-semibold bg-blue-50 rounded-lg px-3 py-1.5">
-                                                <Cpu size={12} />
-                                                <span className="font-mono">{b.tagNumber}</span>
-                                                <span className="text-blue-400">· tracking active</span>
-                                            </div>
-                                        ))}
+                            {/* Bag thumbnails */}
+                            <div className="px-5 py-4 flex-1 space-y-2">
+                                {trip.bags && trip.bags.length > 0 && (
+                                    <div className="flex gap-2 flex-wrap">
+                                        {trip.bags.map((b: any) => {
+                                            const url = bagImageUrl(b.imagePath);
+                                            return (
+                                                <div key={b.id} className="relative">
+                                                    {url ? (
+                                                        <img src={url} alt={b.tagNumber} className="w-14 h-14 rounded-lg object-cover border border-gray-200" />
+                                                    ) : (
+                                                        <div className="w-14 h-14 rounded-lg bg-gray-100 border border-gray-200 flex items-center justify-center">
+                                                            <Briefcase size={18} className="text-gray-400" />
+                                                        </div>
+                                                    )}
+                                                    {b.device && (
+                                                        <span className="absolute -bottom-1 -right-1 bg-airline-blue text-white rounded-full p-0.5">
+                                                            <Cpu size={10} />
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
+                                )}
+                                {trip.bags?.some((b: any) => b.device) ? (
+                                    <p className="text-[11px] text-airline-blue font-semibold">Tracking active</p>
                                 ) : (
-                                    <p className="text-xs text-gray-400 italic">No tracking device linked</p>
+                                    <p className="text-[11px] text-gray-400 italic">No tracking device linked</p>
                                 )}
                             </div>
 
-                            <div className="px-5 pb-5">
+                            <div className="px-5 pb-5 space-y-2">
                                 <button
                                     onClick={() => navigate(`/trips/${trip.id}`)}
                                     className="w-full py-2.5 bg-airline-light text-airline-dark text-sm font-semibold rounded-xl hover:bg-gray-200 transition-colors"
                                 >
                                     Manage Trip & Bags
                                 </button>
+                                {trip.endedAt ? (
+                                    <div className="w-full py-2 text-center text-xs font-semibold text-gray-500 bg-gray-50 rounded-xl">
+                                        Trip ended · {format(new Date(trip.endedAt), 'MMM d, HH:mm')}
+                                    </div>
+                                ) : (
+                                    <button
+                                        onClick={() => handleEndTrip(trip.id)}
+                                        className="w-full py-2.5 bg-amber-50 text-amber-700 text-sm font-semibold rounded-xl hover:bg-amber-100 transition-colors border border-amber-200"
+                                    >
+                                        End Tri
+                                    </button>
+                                )}
                             </div>
                         </div>
                     ))}
@@ -238,7 +298,7 @@ export const Trips = () => {
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700">Departure Date</label>
-                                        <input type="date" name="departureDate" required className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:ring-airline-sky focus:border-airline-sky sm:text-sm" />
+                                        <input type="date" name="departureDate" min={todayStr} required className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:ring-airline-sky focus:border-airline-sky sm:text-sm" />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700">Departure Time</label>
@@ -246,7 +306,7 @@ export const Trips = () => {
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700">Arrival Date</label>
-                                        <input type="date" name="arrivalDate" required className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:ring-airline-sky focus:border-airline-sky sm:text-sm" />
+                                        <input type="date" name="arrivalDate" min={todayStr} required className="mt-1 block w-full border border-gray-300 rounded-lg shadow-sm py-2 px-3 focus:ring-airline-sky focus:border-airline-sky sm:text-sm" />
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700">Arrival Time</label>
@@ -307,8 +367,18 @@ export const Trips = () => {
                                                     <input required type="number" step="0.1" value={bag.weight} onChange={e => handleBagChange(idx, 'weight', e.target.value)} placeholder="45.5" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-1.5 px-3 focus:ring-airline-sky sm:text-sm" />
                                                 </div>
                                                 <div className="md:col-span-2">
-                                                    <label className="block text-xs font-medium text-gray-700">Image</label>
-                                                    <input type="file" accept="image/*" onChange={e => handleBagChange(idx, 'image', e.target.files?.[0])} className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-airline-blue hover:file:bg-blue-100" />
+                                                    <label className="block text-xs font-medium text-gray-700">Bag Photo <span className="text-red-500">*</span></label>
+                                                    <input
+                                                        required={!bag.image}
+                                                        type="file"
+                                                        accept="image/*"
+                                                        capture="environment"
+                                                        onChange={e => handleBagChange(idx, 'image', e.target.files?.[0])}
+                                                        className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-airline-blue hover:file:bg-blue-100"
+                                                    />
+                                                    {bag.image && (
+                                                        <img src={URL.createObjectURL(bag.image)} alt="bag preview" className="mt-2 w-20 h-20 rounded-lg object-cover border border-gray-200" />
+                                                    )}
                                                 </div>
                                                 <div className="md:col-span-2">
                                                     <label className="block text-xs font-medium text-gray-700">Description (Optional)</label>

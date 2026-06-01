@@ -53,6 +53,7 @@ model Trip {
   destinationAirport String
   departureDateTime  DateTime
   arrivalDateTime    DateTime?
+  endedAt            DateTime?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 

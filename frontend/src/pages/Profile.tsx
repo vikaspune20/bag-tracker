@@ -139,7 +139,7 @@ export const Profile = () => {
                         </div>
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-1">Identification Number</label>
-                            <input name="identificationNo" value={formData.identificationNo} onChange={handleChange} required className={inputCls} />
+                            <input name="identificationNo" value={formData.identificationNo} onChange={handleChange} className={inputCls} />
                         </div>
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-1">

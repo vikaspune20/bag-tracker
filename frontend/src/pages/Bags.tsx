@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import api from '../utils/api';
-import { Briefcase, Plus, Loader2, Trash2, Cpu, X, MapPin } from 'lucide-react';
+import api, { bagImageUrl } from '../utils/api';
+import { Briefcase, Plus, Loader2, Trash2, Cpu, X, MapPin, Pencil } from 'lucide-react';
 import { SubscriptionGate } from '../components/SubscriptionGate';
 
 type AvailableDevice = { id: string; deviceId: string; expiresAt: string };
@@ -15,6 +15,8 @@ export const Bags = () => {
     const [uploading, setUploading] = useState(false);
     const [tagNumber, setTagNumber] = useState('');
     const [pickedDevice, setPickedDevice] = useState('');
+    const [editing, setEditing] = useState<any | null>(null);
+    const [savingEdit, setSavingEdit] = useState(false);
 
     useEffect(() => { loadData(); }, []);
 
@@ -51,6 +53,22 @@ export const Bags = () => {
             alert(error?.response?.data?.message || 'Error adding bag');
         } finally {
             setUploading(false);
+        }
+    };
+
+    const handleSaveEdit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        if (!editing) return;
+        setSavingEdit(true);
+        const fd = new FormData(e.currentTarget);
+        try {
+            await api.patch(`/bags/${editing.id}`, fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+            setEditing(null);
+            loadData();
+        } catch (err: any) {
+            alert(err?.response?.data?.message || 'Failed to update bag');
+        } finally {
+            setSavingEdit(false);
         }
     };
 
@@ -107,7 +125,7 @@ export const Bags = () => {
                                 <div className="h-40 bg-gray-100 relative flex-shrink-0">
                                     {bag.imagePath ? (
                                         <img
-                                            src={`http://localhost:5000${bag.imagePath}`}
+                                            src={bagImageUrl(bag.imagePath) || ''}
                                             alt={bag.tagNumber}
                                             className="w-full h-full object-cover"
                                         />
@@ -133,12 +151,22 @@ export const Bags = () => {
                                 <div className="p-4 flex-1 flex flex-col">
                                     <div className="flex items-start justify-between gap-2 mb-1">
                                         <h4 className="font-bold text-base text-gray-900">{bag.weightLbs} lbs</h4>
-                                        <button
-                                            onClick={() => handleDelete(bag.id)}
-                                            className="text-gray-300 hover:text-red-500 transition-colors flex-shrink-0 mt-0.5"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
+                                        <div className="flex items-center gap-2 flex-shrink-0 mt-0.5">
+                                            <button
+                                                onClick={() => setEditing(bag)}
+                                                className="text-gray-300 hover:text-airline-blue transition-colors"
+                                                title="Edit bag"
+                                            >
+                                                <Pencil size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(bag.id)}
+                                                className="text-gray-300 hover:text-red-500 transition-colors"
+                                                title="Delete bag"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
                                     </div>
                                     <p className="text-sm text-gray-500 flex-1 line-clamp-2">
                                         {bag.description || 'No description provided.'}
@@ -258,12 +286,14 @@ export const Bags = () => {
 
                                     <div>
                                         <label className="block text-sm font-semibold text-gray-700 mb-1">
-                                            Bag Photo <span className="font-normal text-gray-400">(optional)</span>
+                                            Bag Photo <span className="text-red-500">*</span>
                                         </label>
                                         <input
                                             name="image"
                                             type="file"
                                             accept="image/*"
+                                            capture="environment"
+                                            required
                                             className="block w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-airline-blue hover:file:bg-blue-100"
                                         />
                                     </div>
@@ -298,6 +328,67 @@ export const Bags = () => {
                                     className="px-6 py-2.5 rounded-xl font-bold text-sm text-white bg-airline-blue hover:bg-airline-dark disabled:opacity-60 transition-colors flex items-center gap-2"
                                 >
                                     {uploading ? <><Loader2 className="animate-spin" size={16} /> Saving…</> : 'Save Bag'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                {/* Edit Bag Modal */}
+                {editing && (
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+                        <div className="bg-white w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+                            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 flex-shrink-0">
+                                <h3 className="text-lg font-bold text-gray-900">Edit Bag · <span className="font-mono">{editing.tagNumber}</span></h3>
+                                <button onClick={() => setEditing(null)} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100">
+                                    <X size={18} />
+                                </button>
+                            </div>
+                            <div className="overflow-y-auto flex-1 p-6">
+                                <form onSubmit={handleSaveEdit} className="space-y-4" id="edit-bag-form">
+                                    {bagImageUrl(editing.imagePath) && (
+                                        <div>
+                                            <p className="text-xs text-gray-500 mb-1.5">Current photo</p>
+                                            <img src={bagImageUrl(editing.imagePath) as string} alt={editing.tagNumber} className="w-24 h-24 object-cover rounded-xl border border-gray-200" />
+                                        </div>
+                                    )}
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-1">Replace Photo <span className="font-normal text-gray-400">(optional)</span></label>
+                                        <input
+                                            name="image"
+                                            type="file"
+                                            accept="image/*"
+                                            capture="environment"
+                                            className="block w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-airline-blue hover:file:bg-blue-100"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-1">Weight (lbs)</label>
+                                        <input
+                                            name="weight"
+                                            type="number"
+                                            step="0.1"
+                                            defaultValue={editing.weightLbs}
+                                            className="block w-full border border-gray-200 rounded-xl shadow-sm py-2.5 px-3 text-sm outline-none focus:ring-2 focus:ring-airline-sky focus:border-airline-sky"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-semibold text-gray-700 mb-1">Description</label>
+                                        <textarea
+                                            name="description"
+                                            rows={3}
+                                            defaultValue={editing.description || ''}
+                                            placeholder="Red Samsonite suitcase…"
+                                            className="block w-full border border-gray-200 rounded-xl shadow-sm py-2.5 px-3 text-sm outline-none focus:ring-2 focus:ring-airline-sky focus:border-airline-sky resize-none"
+                                        />
+                                    </div>
+                                </form>
+                            </div>
+                            <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50 flex-shrink-0">
+                                <button type="button" onClick={() => setEditing(null)} className="px-4 py-2.5 rounded-xl font-semibold text-sm text-gray-600 bg-white border border-gray-200 hover:bg-gray-50">
+                                    Cancel
+                                </button>
+                                <button type="submit" form="edit-bag-form" disabled={savingEdit} className="px-6 py-2.5 rounded-xl font-bold text-sm text-white bg-airline-blue hover:bg-airline-dark disabled:opacity-60 transition-colors flex items-center gap-2">
+                                    {savingEdit ? <><Loader2 className="animate-spin" size={16} /> Saving…</> : 'Save Changes'}
                                 </button>
                             </div>
                         </div>

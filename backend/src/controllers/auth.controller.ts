@@ -338,7 +338,7 @@ export const getProfile = async (req: any, res: Response) => {
 // AFTER
 export const updateProfile = async (req: any, res: Response) => {
   try {
-    const { fullName, phone, address, state, city, zip } = req.body;
+    const { fullName, phone, address, state, city, zip, identificationNo } = req.body;
    const profilePicUrl = req.file ? req.file.path : undefined;
 
     // Only include a field if it was actually sent in the request
@@ -349,6 +349,7 @@ export const updateProfile = async (req: any, res: Response) => {
     if (state !== undefined)     dataToUpdate.state     = state;
     if (city !== undefined)      dataToUpdate.city      = city;
     if (zip !== undefined)       dataToUpdate.zip       = zip;
+    if (identificationNo !== undefined) dataToUpdate.identificationNo = identificationNo.trim() === '' ? null : identificationNo;
     if (profilePicUrl)           dataToUpdate.profilePicUrl = profilePicUrl;
 
     const updatedUser = await prisma.user.update({

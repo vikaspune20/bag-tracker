@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Plane, Loader2, Briefcase, MapPin, Clock, Trash2 } from 'lucide-react';
+import { ChevronLeft, Plane, Loader2, Briefcase, MapPin, Clock, Trash2, StopCircle, CheckCircle2 } from 'lucide-react';
 import { format } from 'date-fns';
-import api from '../utils/api';
+import api, { bagImageUrl } from '../utils/api';
 
 interface TrackingLog {
   id: string;
@@ -29,6 +29,7 @@ interface TripData {
   destinationAirport: string;
   departureDateTime: string;
   arrivalDateTime: string | null;
+  endedAt: string | null;
   bags: Bag[];
 }
 
@@ -38,6 +39,21 @@ export function TripDetail() {
   const [trip, setTrip] = useState<TripData | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  const [ending, setEnding] = useState(false);
+
+  const handleEndTrip = async () => {
+    if (!trip) return;
+    if (!confirm(`End trip ${trip.flightNumber}? Attached tracking devices will be released and can be reused.`)) return;
+    setEnding(true);
+    try {
+      const { data } = await api.post(`/trips/${trip.id}/end`);
+      setTrip({ ...trip, endedAt: data.trip?.endedAt || new Date().toISOString() });
+    } catch (e: any) {
+      alert(e.response?.data?.message || 'Failed to end trip');
+    } finally {
+      setEnding(false);
+    }
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -131,8 +147,8 @@ export function TripDetail() {
                 {/* Bag header */}
                 <div className="px-5 py-4 flex items-center justify-between border-b border-gray-50">
                   <div className="flex items-center gap-3">
-                    {bag.imageUrl ? (
-                      <img src={bag.imageUrl} alt="bag" className="w-12 h-12 rounded-xl object-cover" />
+                    {bagImageUrl((bag as any).imagePath) ? (
+                      <img src={bagImageUrl((bag as any).imagePath) as string} alt="bag" className="w-12 h-12 rounded-xl object-cover" />
                     ) : (
                       <div className="w-12 h-12 rounded-xl bg-airline-light flex items-center justify-center">
                         <Briefcase size={20} className="text-airline-sky" />
@@ -191,6 +207,28 @@ export function TripDetail() {
           </div>
         )}
       </div>
+
+      {/* End trip */}
+      {trip.endedAt ? (
+        <div className="border border-gray-200 rounded-2xl p-5 bg-gray-50 flex items-center gap-3">
+          <CheckCircle2 size={18} className="text-emerald-600 flex-shrink-0" />
+          <p className="text-sm text-gray-700">
+            Trip ended on <span className="font-semibold">{format(new Date(trip.endedAt), 'MMM d, yyyy HH:mm')}</span>. Devices are released.
+          </p>
+        </div>
+      ) : (
+        <div className="border border-amber-200 rounded-2xl p-5 bg-amber-50">
+          <p className="text-sm text-gray-700 mb-3">Ending the trip releases all attached tracking devices so they can be reused on a new trip or bag.</p>
+          <button
+            onClick={handleEndTrip}
+            disabled={ending}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold transition-colors disabled:opacity-50"
+          >
+            <StopCircle size={15} />
+            {ending ? 'Ending…' : 'End Trip & Release Devices'}
+          </button>
+        </div>
+      )}
 
       {/* Danger zone */}
       <div className="border border-red-200 rounded-2xl p-5 bg-red-50">

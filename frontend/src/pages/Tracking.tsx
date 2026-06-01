@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import api from '../utils/api';
+import api, { bagImageUrl } from '../utils/api';
 import { Loader2, CheckCircle2, Plane, Navigation, PackageCheck, MapPin, Briefcase, Cpu, ArrowLeft, Smartphone, Send, X, CheckCircle } from 'lucide-react';
 import { LiveGpsMap } from '../components/LiveGpsMap';
 import { format } from 'date-fns';
@@ -230,7 +230,7 @@ const TrackingInner = () => {
                 <div className="p-5 flex items-center gap-4">
                     {bagInfo.imagePath ? (
                         <img
-                            src={`http://localhost:5000${bagInfo.imagePath}`}
+                            src={bagImageUrl(bagInfo.imagePath) || ''}
                             alt="Bag"
                             className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-xl shadow-sm flex-shrink-0"
                         />

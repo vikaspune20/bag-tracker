@@ -11,7 +11,7 @@ router.use(authenticateToken);
 router.post('/', requirePremium, requireOwnedDevice, upload.single('image'), addBag);
 router.get('/', getBags);
 router.get('/:id', getBagById);
-router.patch('/:id', requirePremium, updateBag);
+router.patch('/:id', requirePremium, upload.single('image'), updateBag);
 router.delete('/:id', deleteBag);
 
 export default router;

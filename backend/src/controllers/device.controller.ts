@@ -189,7 +189,7 @@ export const listMyDevices = async (req: AuthRequest, res: Response) => {
             tagNumber: d.deviceId,
             trip: {
               userId: req.user!.id,
-              OR: [{ arrivalDateTime: null }, { arrivalDateTime: { gt: now } }],
+              endedAt: null,
             },
           },
           include: { trip: true },

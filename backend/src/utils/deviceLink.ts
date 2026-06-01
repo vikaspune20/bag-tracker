@@ -44,7 +44,7 @@ export async function validateDeviceTag(args: {
       ...(args.excludeBagId ? { NOT: { id: args.excludeBagId } } : {}),
       trip: {
         userId: args.userId,
-        OR: [{ arrivalDateTime: null }, { arrivalDateTime: { gt: now } }],
+        endedAt: null,
       },
     },
   });
