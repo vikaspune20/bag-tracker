@@ -9,7 +9,6 @@ import trackingRoutes from './routes/tracking.routes';
 import notificationRoutes from './routes/notification.routes';
 import subscriptionRoutes from './routes/subscription.routes';
 import stripeRoutes from './routes/stripe.routes';
-import path from 'path';
 import dashboardRoutes from './routes/dashboard.routes';
 import deviceRoutes from './routes/device.routes';
 import cronRoutes from './routes/cron.routes';
